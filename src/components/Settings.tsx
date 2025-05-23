@@ -6,14 +6,14 @@ import { Input } from './ui/input';
 import { useAuth } from '../hooks/useAuth';
 
 export const Settings = () => {
-  const { user, updateUser, logout } = useAuth();
+  const { profile, updateProfile, signOut } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    address: user?.address || '',
-    currency: user?.currency || 'USD'
+    name: profile?.name || '',
+    email: profile?.email || '',
+    phone: profile?.phone || '',
+    address: profile?.address || '',
+    currency: profile?.currency || 'USD'
   });
 
   const currencies = [
@@ -26,14 +26,21 @@ export const Settings = () => {
     { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' }
   ];
 
-  const handleSave = () => {
-    updateUser(formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      await updateProfile(formData);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
-  const handleLogout = () => {
-    logout();
-    window.location.href = '/';
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (
@@ -64,17 +71,21 @@ export const Settings = () => {
             <div className="flex items-center space-x-6 mb-6">
               <div className="relative">
                 <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-white">
-                    {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
-                  </span>
+                  {profile?.avatar ? (
+                    <img src={profile.avatar} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-white">
+                      {profile?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                    </span>
+                  )}
                 </div>
                 <button className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
               <div>
-                <h4 className="text-xl font-semibold text-gray-900">{user?.name}</h4>
-                <p className="text-gray-500">{user?.email}</p>
+                <h4 className="text-xl font-semibold text-gray-900">{profile?.name}</h4>
+                <p className="text-gray-500">{profile?.email}</p>
                 <p className="text-sm text-gray-400">Member since January 2024</p>
               </div>
             </div>
@@ -95,6 +106,8 @@ export const Settings = () => {
                       type="email" 
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      disabled
+                      className="bg-gray-100"
                     />
                   </div>
                 </div>
@@ -123,20 +136,20 @@ export const Settings = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <p className="text-gray-900">{user?.name || 'Not set'}</p>
+                    <p className="text-gray-900">{profile?.name || 'Not set'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <p className="text-gray-900">{user?.email || 'Not set'}</p>
+                    <p className="text-gray-900">{profile?.email || 'Not set'}</p>
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <p className="text-gray-900">{user?.phone || 'Not set'}</p>
+                  <p className="text-gray-900">{profile?.phone || 'Not set'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                  <p className="text-gray-900">{user?.address || 'Not set'}</p>
+                  <p className="text-gray-900">{profile?.address || 'Not set'}</p>
                 </div>
               </div>
             )}
@@ -151,7 +164,7 @@ export const Settings = () => {
                 value={formData.currency}
                 onChange={(e) => {
                   setFormData({...formData, currency: e.target.value});
-                  updateUser({currency: e.target.value});
+                  updateProfile({currency: e.target.value});
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >

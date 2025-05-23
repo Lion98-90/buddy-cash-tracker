@@ -1,22 +1,40 @@
 
 import { Button } from '../components/ui/button';
 import { Wallet, TrendingUp, Users, Shield } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const Landing = () => {
-  const handleGoogleLogin = () => {
-    // This would integrate with your authentication provider
-    // For now, we'll simulate login and redirect to dashboard
-    console.log('Google login clicked');
-    // Simulate successful login
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('user', JSON.stringify({
-      id: '1',
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
-    }));
-    window.location.href = '/dashboard';
+  const { signInWithGoogle, isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Wallet className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

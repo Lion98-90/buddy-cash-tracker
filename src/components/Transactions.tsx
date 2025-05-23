@@ -3,18 +3,62 @@ import { useState } from 'react';
 import { Plus, Search, Filter, Download } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { useTransactions } from '../hooks/useTransactions';
+import { useContacts } from '../hooks/useContacts';
+import { useAuth } from '../hooks/useAuth';
 
 export const Transactions = () => {
+  const { profile } = useAuth();
+  const { transactions, addTransaction } = useTransactions();
+  const { contacts, addContact } = useContacts();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [formData, setFormData] = useState({
+    personName: '',
+    amount: '',
+    type: 'given',
+    description: ''
+  });
 
-  const transactions = [
-    { id: 1, person: 'John Doe', amount: 250, type: 'received', date: '2024-01-15', description: 'Lunch payment' },
-    { id: 2, person: 'Sarah Smith', amount: -120, type: 'given', date: '2024-01-14', description: 'Grocery shopping' },
-    { id: 3, person: 'Mike Johnson', amount: 80, type: 'received', date: '2024-01-13', description: 'Movie tickets' },
-    { id: 4, person: 'Emma Wilson', amount: -300, type: 'given', date: '2024-01-12', description: 'Rent contribution' },
-    { id: 5, person: 'Alex Brown', amount: 150, type: 'received', date: '2024-01-11', description: 'Book sale' },
-    { id: 6, person: 'Lisa Davis', amount: -75, type: 'given', date: '2024-01-10', description: 'Coffee meetup' }
-  ];
+  const getCurrencySymbol = (currencyCode: string) => {
+    const symbols: { [key: string]: string } = {
+      'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥', 'CAD': 'C$', 'AUD': 'A$'
+    };
+    return symbols[currencyCode] || '$';
+  };
+
+  const currencySymbol = getCurrencySymbol(profile?.currency || 'USD');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      let contactId = null;
+      
+      // Find existing contact or create new one
+      const existingContact = contacts.find(c => 
+        c.name.toLowerCase() === formData.personName.toLowerCase()
+      );
+      
+      if (existingContact) {
+        contactId = existingContact.id;
+      } else if (formData.personName.trim()) {
+        const newContact = await addContact({ name: formData.personName.trim() });
+        contactId = newContact?.id || null;
+      }
+
+      await addTransaction({
+        amount: parseFloat(formData.amount),
+        type: formData.type as 'given' | 'received',
+        description: formData.description,
+        contact_id: contactId
+      });
+
+      setFormData({ personName: '', amount: '', type: 'given', description: '' });
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -62,34 +106,40 @@ export const Transactions = () => {
           <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
         </div>
         <div className="divide-y divide-gray-200">
-          {transactions.map((transaction) => (
-            <div key={transaction.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-600">
-                      {transaction.person.split(' ').map(n => n[0]).join('')}
+          {transactions.length > 0 ? (
+            transactions.map((transaction) => (
+              <div key={transaction.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-600">
+                        {(transaction.contact?.name || 'Unknown').split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{transaction.contact?.name || 'Unknown'}</p>
+                      <p className="text-sm text-gray-500">{transaction.description}</p>
+                      <p className="text-xs text-gray-400">{new Date(transaction.date).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-lg font-semibold ${
+                      transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {transaction.amount > 0 ? '+' : ''}{currencySymbol}{Math.abs(transaction.amount).toFixed(2)}
                     </span>
+                    <p className="text-sm text-gray-500">
+                      {transaction.amount > 0 ? 'Received' : 'Given'}
+                    </p>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{transaction.person}</p>
-                    <p className="text-sm text-gray-500">{transaction.description}</p>
-                    <p className="text-xs text-gray-400">{transaction.date}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className={`text-lg font-semibold ${
-                    transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount)}.00
-                  </span>
-                  <p className="text-sm text-gray-500">
-                    {transaction.amount > 0 ? 'Received' : 'Given'}
-                  </p>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="px-6 py-8 text-center text-gray-500">
+              No transactions yet. Add your first transaction above!
             </div>
-          ))}
+          )}
         </div>
       </div>
 
@@ -98,25 +148,45 @@ export const Transactions = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Transaction</h3>
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Person Name</label>
-                <Input placeholder="Enter person name" />
+                <Input 
+                  value={formData.personName}
+                  onChange={(e) => setFormData({...formData, personName: e.target.value})}
+                  placeholder="Enter person name" 
+                  required
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-                <Input type="number" placeholder="Enter amount" />
+                <Input 
+                  type="number" 
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                  placeholder="Enter amount" 
+                  required
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select 
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   <option value="given">Money Given</option>
                   <option value="received">Money Received</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <Input placeholder="Enter description" />
+                <Input 
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Enter description" 
+                />
               </div>
               <div className="flex space-x-3 pt-4">
                 <Button 

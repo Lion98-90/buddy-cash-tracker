@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { Dashboard } from '../components/Dashboard';
 import { Transactions } from '../components/Transactions';
@@ -10,15 +11,15 @@ import { Profile } from '../components/Profile';
 import { Settings } from '../components/Settings';
 
 const Index = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to landing if not authenticated
-    if (!isAuthenticated) {
-      window.location.href = '/';
+    if (!isLoading && !isAuthenticated) {
+      navigate('/');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -39,8 +40,21 @@ const Index = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    return null; // Will redirect via useEffect
+    return null;
   }
 
   return (
