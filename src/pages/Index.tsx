@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +6,6 @@ import { Dashboard } from '../components/Dashboard';
 import { Transactions } from '../components/Transactions';
 import { People } from '../components/People';
 import { Reports } from '../components/Reports';
-import { Profile } from '../components/Profile';
 import { Settings } from '../components/Settings';
 
 const Index = () => {
@@ -31,8 +29,6 @@ const Index = () => {
         return <People />;
       case 'reports':
         return <Reports />;
-      case 'profile':
-        return <Profile />;
       case 'settings':
         return <Settings />;
       default:

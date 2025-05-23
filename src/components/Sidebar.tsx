@@ -1,10 +1,8 @@
-
 import { 
   Home, 
   CreditCard, 
   Users, 
-  BarChart3, 
-  User, 
+  BarChart3,
   Wallet,
   Settings,
   LogOut
@@ -24,7 +22,6 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
     { id: 'people', label: 'People', icon: Users },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'profile', label: 'Profile', icon: User },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

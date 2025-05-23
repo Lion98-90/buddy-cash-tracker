@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Camera, Edit, Bell, Shield, CreditCard, Globe, LogOut } from 'lucide-react';
+import { Camera, Edit, Bell, Shield, CreditCard, Globe, LogOut, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../hooks/useAuth';
@@ -24,6 +23,13 @@ export const Settings = () => {
     { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
     { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
     { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' }
+  ];
+
+  // Mock login history data
+  const loginHistory = [
+    { date: '2024-03-20 14:30:25', device: 'Chrome on Windows', location: 'New York, USA' },
+    { date: '2024-03-18 09:15:10', device: 'Safari on iPhone', location: 'Los Angeles, USA' },
+    { date: '2024-03-15 11:45:33', device: 'Firefox on MacOS', location: 'London, UK' }
   ];
 
   const handleSave = async () => {
@@ -195,13 +201,30 @@ export const Settings = () => {
                 </div>
                 <Button variant="outline">Enable</Button>
               </div>
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-900">Login History</h4>
+                  <Clock className="w-5 h-5 text-gray-400" />
+                </div>
+                <div className="space-y-3">
+                  {loginHistory.map((login, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{login.device}</p>
+                        <p className="text-xs text-gray-500">{login.location}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{login.date}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="space-y-6">
-          {/* Account Actions */}
+          {/* Settings Menu */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-2">
