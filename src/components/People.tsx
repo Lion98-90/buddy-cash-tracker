@@ -34,27 +34,9 @@ export const People = () => {
         { date: '2024-01-15', amount: 250, type: 'received', description: 'Lunch payment' },
         { date: '2024-01-10', amount: -100, type: 'given', description: 'Movie tickets' }
       ]
-    },
+    },  
     { 
       id: 2, 
-      name: 'Sarah Smith', 
-      balance: -120, 
-      phone: '+1 234 567 8902',
-      transactions: [
-        { date: '2024-01-14', amount: -120, type: 'given', description: 'Grocery shopping' }
-      ]
-    },
-    { 
-      id: 3, 
-      name: 'Mike Johnson', 
-      balance: 80, 
-      phone: '+1 234 567 8903',
-      transactions: [
-        { date: '2024-01-13', amount: 80, type: 'received', description: 'Book sale' }
-      ]
-    },
-    { 
-      id: 4, 
       name: 'Emma Wilson', 
       balance: -300, 
       phone: '+1 234 567 8904',
