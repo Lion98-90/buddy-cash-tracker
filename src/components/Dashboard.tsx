@@ -2,12 +2,30 @@
 import { DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { ExpenseChart } from './ExpenseChart';
 import { BalanceChart } from './BalanceChart';
+import { useAuth } from '../hooks/useAuth';
 
 export const Dashboard = () => {
+  const { user } = useAuth();
+  
+  const getCurrencySymbol = (currencyCode: string) => {
+    const symbols: { [key: string]: string } = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'INR': '₹',
+      'JPY': '¥',
+      'CAD': 'C$',
+      'AUD': 'A$'
+    };
+    return symbols[currencyCode] || '$';
+  };
+
+  const currencySymbol = getCurrencySymbol(user?.currency || 'USD');
+
   const stats = [
     {
       title: 'Total Balance',
-      value: '$39,800.00',
+      value: `${currencySymbol}39,800.00`,
       change: '+8.2%',
       trend: 'up',
       icon: DollarSign,
@@ -16,7 +34,7 @@ export const Dashboard = () => {
     },
     {
       title: 'Money Given',
-      value: '$12,450.00',
+      value: `${currencySymbol}12,450.00`,
       change: '+2.1%',
       trend: 'up',
       icon: TrendingUp,
@@ -25,7 +43,7 @@ export const Dashboard = () => {
     },
     {
       title: 'Money Received',
-      value: '$8,920.00',
+      value: `${currencySymbol}8,920.00`,
       change: '-1.5%',
       trend: 'down',
       icon: TrendingDown,
@@ -49,7 +67,7 @@ export const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back! Here's your financial overview</p>
+          <p className="text-gray-600 mt-1">Welcome back, {user?.name}! Here's your financial overview</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex -space-x-2">
@@ -57,7 +75,7 @@ export const Dashboard = () => {
             <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108755-2616b612b1ab?w=32&h=32&fit=crop&crop=face" alt="User" />
             <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face" alt="User" />
           </div>
-          <span className="text-sm text-gray-500">Kenny Schowalter</span>
+          <span className="text-sm text-gray-500">{user?.name}</span>
         </div>
       </div>
 
@@ -95,7 +113,7 @@ export const Dashboard = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Portfolio Score</h3>
-            <div className="text-2xl font-bold text-gray-900">86.32 <span className="text-sm text-gray-500">USD</span></div>
+            <div className="text-2xl font-bold text-gray-900">86.32 <span className="text-sm text-gray-500">{user?.currency || 'USD'}</span></div>
           </div>
           <div className="flex items-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
@@ -119,10 +137,10 @@ export const Dashboard = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
           <div className="space-y-4">
             {[
-              { name: 'John Doe', amount: '+$250.00', type: 'received', time: '2 hours ago' },
-              { name: 'Sarah Smith', amount: '-$120.00', type: 'given', time: '4 hours ago' },
-              { name: 'Mike Johnson', amount: '+$80.00', type: 'received', time: '1 day ago' },
-              { name: 'Emma Wilson', amount: '-$300.00', type: 'given', time: '2 days ago' }
+              { name: 'John Doe', amount: `+${currencySymbol}250.00`, type: 'received', time: '2 hours ago' },
+              { name: 'Sarah Smith', amount: `-${currencySymbol}120.00`, type: 'given', time: '4 hours ago' },
+              { name: 'Mike Johnson', amount: `+${currencySymbol}80.00`, type: 'received', time: '1 day ago' },
+              { name: 'Emma Wilson', amount: `-${currencySymbol}300.00`, type: 'given', time: '2 days ago' }
             ].map((transaction, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">

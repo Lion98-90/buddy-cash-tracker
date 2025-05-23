@@ -6,9 +6,10 @@ import {
   BarChart3, 
   User, 
   Wallet,
-  TrendingUp,
-  Settings
+  Settings,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface SidebarProps {
   activeTab: string;
@@ -16,13 +17,21 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
+  const { user, logout } = useAuth();
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
     { id: 'people', label: 'People', icon: Users },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/';
+  };
 
   return (
     <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
@@ -32,8 +41,8 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
             <Wallet className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">ExpenseTracker</h1>
-            <p className="text-sm text-gray-500">Manage your finances</p>
+            <h1 className="text-xl font-bold text-gray-900">BuddyCash</h1>
+            <p className="text-sm text-gray-500">Welcome, {user?.name?.split(' ')[0]}</p>
           </div>
         </div>
       </div>
@@ -62,9 +71,12 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
       </nav>
       
       <div className="p-4 border-t border-gray-200">
-        <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-          <Settings className="w-5 h-5" />
-          <span className="font-medium">Settings</span>
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="font-medium">Sign Out</span>
         </button>
       </div>
     </div>

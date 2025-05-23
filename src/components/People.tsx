@@ -3,9 +3,26 @@ import { useState } from 'react';
 import { Plus, Search, MessageCircle, Phone, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { useAuth } from '../hooks/useAuth';
 
 export const People = () => {
+  const { user } = useAuth();
   const [selectedPerson, setSelectedPerson] = useState(null);
+
+  const getCurrencySymbol = (currencyCode: string) => {
+    const symbols: { [key: string]: string } = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'INR': '₹',
+      'JPY': '¥',
+      'CAD': 'C$',
+      'AUD': 'A$'
+    };
+    return symbols[currencyCode] || '$';
+  };
+
+  const currencySymbol = getCurrencySymbol(user?.currency || 'USD');
 
   const people = [
     { 
@@ -103,7 +120,7 @@ export const People = () => {
                     <span className={`text-lg font-semibold ${
                       person.balance > 0 ? 'text-green-600' : person.balance < 0 ? 'text-red-600' : 'text-gray-600'
                     }`}>
-                      {person.balance > 0 ? '+' : ''}${person.balance}
+                      {person.balance > 0 ? '+' : ''}{currencySymbol}{Math.abs(person.balance)}
                     </span>
                     <p className="text-sm text-gray-500">
                       {person.balance > 0 ? 'Owes you' : person.balance < 0 ? 'You owe' : 'Settled'}
@@ -149,7 +166,7 @@ export const People = () => {
                   <p className={`text-3xl font-bold ${
                     selectedPerson.balance > 0 ? 'text-green-600' : selectedPerson.balance < 0 ? 'text-red-600' : 'text-gray-600'
                   }`}>
-                    {selectedPerson.balance > 0 ? '+' : ''}${selectedPerson.balance}
+                    {selectedPerson.balance > 0 ? '+' : ''}{currencySymbol}{Math.abs(selectedPerson.balance)}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     {selectedPerson.balance > 0 ? 'They owe you' : selectedPerson.balance < 0 ? 'You owe them' : 'All settled'}
@@ -178,7 +195,7 @@ export const People = () => {
                       <span className={`font-semibold ${
                         transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount)}
+                        {transaction.amount > 0 ? '+' : ''}{currencySymbol}{Math.abs(transaction.amount)}
                       </span>
                     </div>
                   ))}
