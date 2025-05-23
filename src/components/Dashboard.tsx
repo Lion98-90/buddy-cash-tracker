@@ -98,7 +98,9 @@ export const Dashboard = () => {
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex -space-x-2">
-            <img src={profile.avatar} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
+           <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face" alt="User" />
+           <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108755-2616b612b1ab?w=32&h=32&fit=crop&crop=face" alt="User" />
+           <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face" alt="User" />
           </div>
           <span className="text-sm text-gray-500">{profile?.name}</span>
         </div>
