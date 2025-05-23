@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Plus, Search, MessageCircle, Phone } from 'lucide-react';
+import { Plus, Search, MessageCircle, Phone, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
