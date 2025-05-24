@@ -1,4 +1,3 @@
-
 import { DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { ExpenseChart } from './ExpenseChart';
 import { useAuth } from '../hooks/useAuth';
@@ -80,9 +79,9 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-1">Welcome back, {profile?.name}! Here's your financial overview</p>
         </div>
         <div className="flex items-center space-x-3">
@@ -105,15 +104,15 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards - Removed Balance Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div key={index} className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`w-6 h-6 ${stat.color}`} />
+                  <Icon className={`w-5 h-5 md:w-6 md:h-6 ${stat.color}`} />
                 </div>
                 <span className={`text-sm font-medium ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
                   {stat.change}
@@ -121,37 +120,37 @@ export const Dashboard = () => {
               </div>
               <div className="mt-4">
                 <h3 className="text-sm font-medium text-gray-500">{stat.title}</h3>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Expense Chart - Now using real data */}
+      {/* Expense Chart */}
       <div className="grid grid-cols-1 gap-6">
         <ExpenseChart />
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
         <div className="space-y-4">
           {recentTransactions.length > 0 ? (
             recentTransactions.map((transaction, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-600">
+                  <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span className="text-xs md:text-sm font-medium text-gray-600">
                       {transaction.name.split(' ').map(n => n[0]).join('')}
                     </span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{transaction.name}</p>
-                    <p className="text-sm text-gray-500">{transaction.time}</p>
+                    <p className="font-medium text-gray-900 text-sm md:text-base">{transaction.name}</p>
+                    <p className="text-xs md:text-sm text-gray-500">{transaction.time}</p>
                   </div>
                 </div>
-                <span className={`font-semibold ${transaction.type === 'received' ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`font-semibold ${transaction.type === 'received' ? 'text-green-600' : 'text-red-600'} text-sm md:text-base`}>
                   {transaction.amount}
                 </span>
               </div>

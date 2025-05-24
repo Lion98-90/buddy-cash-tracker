@@ -54,9 +54,9 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 md:p-6 lg:p-8 w-full">
         <div className="max-w-7xl mx-auto">
           {renderContent()}
         </div>
