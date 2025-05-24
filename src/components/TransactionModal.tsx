@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { X, Calendar, Edit, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -5,7 +6,6 @@ import { Input } from './ui/input';
 import { useTransactions, Transaction } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../hooks/useAuth';
-import { useLanguage } from '../hooks/useLanguage';
 
 interface TransactionModalProps {
   transaction: Transaction;
@@ -16,16 +16,14 @@ interface TransactionModalProps {
 
 export const TransactionModal = ({ transaction, isOpen, onClose, onUpdate }: TransactionModalProps) => {
   const { profile } = useAuth();
-  const { deleteTransaction, updateTransaction } = useTransactions();
+  const { deleteTransaction } = useTransactions();
   const { categories } = useCategories();
-  const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     amount: Math.abs(transaction.amount).toString(),
     description: transaction.description || '',
     categoryId: transaction.category_id || '',
-    date: transaction.date ? new Date(transaction.date).toISOString().split('T')[0] : '',
-    type: transaction.amount > 0 ? 'received' : 'given'
+    date: transaction.date ? new Date(transaction.date).toISOString().split('T')[0] : ''
   });
 
   const getCurrencySymbol = (currencyCode: string) => {
@@ -49,35 +47,13 @@ export const TransactionModal = ({ transaction, isOpen, onClose, onUpdate }: Tra
     }
   };
 
-  const handleEdit = async () => {
-    if (!isEditing) {
-      setIsEditing(true);
-      return;
-    }
-
-    try {
-      await updateTransaction(transaction.id, {
-        amount: parseFloat(editData.amount) * (editData.type === 'given' ? -1 : 1),
-        description: editData.description,
-        category_id: editData.categoryId || null,
-        date: editData.date
-      });
-      
-      onUpdate?.();
-      setIsEditing(false);
-      onClose();
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">{t('transaction-details')}</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Transaction Details</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
@@ -135,7 +111,7 @@ export const TransactionModal = ({ transaction, isOpen, onClose, onUpdate }: Tra
           {/* Action Buttons */}
           <div className="flex space-x-3 pt-4 border-t">
             <Button 
-              onClick={handleEdit}
+              onClick={() => setIsEditing(true)}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Edit className="w-4 h-4 mr-2" />
