@@ -1,12 +1,13 @@
 
 import { useState } from 'react';
-import { Plus, Search, Filter, Download } from 'lucide-react';
+import { Plus, Search, Filter, Download, Eye } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useTransactions } from '../hooks/useTransactions';
 import { useContacts } from '../hooks/useContacts';
 import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../hooks/useAuth';
+import { TransactionModal } from './TransactionModal';
 
 export const Transactions = () => {
   const { profile } = useAuth();
@@ -14,12 +15,16 @@ export const Transactions = () => {
   const { contacts, addContact } = useContacts();
   const { categories } = useCategories();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
   const [formData, setFormData] = useState({
     personName: '',
     amount: '',
     type: 'given',
     description: '',
-    categoryId: ''
+    categoryId: '',
+    date: new Date().toISOString().split('T')[0]
   });
 
   const getCurrencySymbol = (currencyCode: string) => {
@@ -37,7 +42,6 @@ export const Transactions = () => {
     try {
       let contactId = null;
       
-      // Find existing contact or create new one
       const existingContact = contacts.find(c => 
         c.name.toLowerCase() === formData.personName.toLowerCase()
       );
@@ -54,15 +58,57 @@ export const Transactions = () => {
         type: formData.type as 'given' | 'received',
         description: formData.description,
         contact_id: contactId,
-        category_id: formData.categoryId || null
+        category_id: formData.categoryId || null,
+        date: formData.date
       });
 
-      setFormData({ personName: '', amount: '', type: 'given', description: '', categoryId: '' });
+      setFormData({ 
+        personName: '', 
+        amount: '', 
+        type: 'given', 
+        description: '', 
+        categoryId: '',
+        date: new Date().toISOString().split('T')[0]
+      });
       setShowAddForm(false);
     } catch (error) {
       console.error('Error adding transaction:', error);
     }
   };
+
+  const handleExport = () => {
+    const csvContent = [
+      ['Date', 'Contact', 'Amount', 'Type', 'Category', 'Description'],
+      ...filteredTransactions.map(t => [
+        new Date(t.date).toLocaleDateString(),
+        t.contact?.name || 'Unknown',
+        Math.abs(t.amount).toFixed(2),
+        t.amount > 0 ? 'Received' : 'Given',
+        t.category?.name || 'No category',
+        t.description || ''
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transactions.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const filteredTransactions = transactions.filter(transaction => {
+    const matchesSearch = !searchQuery || 
+      (transaction.contact?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (transaction.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesFilter = filterType === 'all' || 
+      (filterType === 'given' && transaction.amount < 0) ||
+      (filterType === 'received' && transaction.amount > 0);
+    
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <div className="space-y-6">
@@ -90,14 +136,21 @@ export const Transactions = () => {
               <Input 
                 placeholder="Search transactions..." 
                 className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-          <Button variant="outline">
+          <select 
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Transactions</option>
+            <option value="given">Money Given</option>
+            <option value="received">Money Received</option>
+          </select>
+          <Button variant="outline" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
@@ -110,8 +163,8 @@ export const Transactions = () => {
           <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
         </div>
         <div className="divide-y divide-gray-200">
-          {transactions.length > 0 ? (
-            transactions.map((transaction) => (
+          {filteredTransactions.length > 0 ? (
+            filteredTransactions.map((transaction) => (
               <div key={transaction.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
@@ -134,22 +187,31 @@ export const Transactions = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`text-lg font-semibold ${
-                      transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.amount > 0 ? '+' : ''}{currencySymbol}{Math.abs(transaction.amount).toFixed(2)}
-                    </span>
-                    <p className="text-sm text-gray-500">
-                      {transaction.amount > 0 ? 'Received' : 'Given'}
-                    </p>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-right">
+                      <span className={`text-lg font-semibold ${
+                        transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transaction.amount > 0 ? '+' : ''}{currencySymbol}{Math.abs(transaction.amount).toFixed(2)}
+                      </span>
+                      <p className="text-sm text-gray-500">
+                        {transaction.amount > 0 ? 'Received' : 'Given'}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedTransaction(transaction)}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
             ))
           ) : (
             <div className="px-6 py-8 text-center text-gray-500">
-              No transactions yet. Add your first transaction above!
+              No transactions found. {searchQuery && 'Try adjusting your search or filter.'}
             </div>
           )}
         </div>
@@ -178,6 +240,15 @@ export const Transactions = () => {
                   value={formData.amount}
                   onChange={(e) => setFormData({...formData, amount: e.target.value})}
                   placeholder="Enter amount" 
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <Input 
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
                   required
                 />
               </div>
@@ -234,6 +305,16 @@ export const Transactions = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Transaction Details Modal */}
+      {selectedTransaction && (
+        <TransactionModal
+          transaction={selectedTransaction}
+          isOpen={!!selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+          onUpdate={() => window.location.reload()}
+        />
       )}
     </div>
   );

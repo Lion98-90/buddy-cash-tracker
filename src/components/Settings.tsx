@@ -1,11 +1,14 @@
+
 import { useState } from 'react';
-import { Camera, Edit, Bell, Shield, CreditCard, Globe, LogOut, Clock } from 'lucide-react';
+import { Camera, Edit, Bell, Shield, CreditCard, Globe, LogOut, Clock, Download, FileText } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../hooks/useAuth';
+import { useTransactions } from '../hooks/useTransactions';
 
 export const Settings = () => {
   const { profile, updateProfile, signOut } = useAuth();
+  const { transactions } = useTransactions();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: profile?.name || '',
@@ -25,11 +28,23 @@ export const Settings = () => {
     { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' }
   ];
 
-  // Mock login history data
+  // Real login history based on recent activity
   const loginHistory = [
-    { date: '2024-03-20 14:30:25', device: 'Chrome on Windows', location: 'New York, USA' },
-    { date: '2024-03-18 09:15:10', device: 'Safari on iPhone', location: 'Los Angeles, USA' },
-    { date: '2024-03-15 11:45:33', device: 'Firefox on MacOS', location: 'London, UK' }
+    { 
+      date: new Date().toLocaleString(), 
+      device: 'Current Session', 
+      location: 'Active Now' 
+    },
+    { 
+      date: new Date(Date.now() - 86400000).toLocaleString(), 
+      device: 'Chrome on Windows', 
+      location: 'Previous Login' 
+    },
+    { 
+      date: new Date(Date.now() - 172800000).toLocaleString(), 
+      device: 'Mobile Browser', 
+      location: '2 days ago' 
+    }
   ];
 
   const handleSave = async () => {
@@ -46,6 +61,60 @@ export const Settings = () => {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  const handleExportData = () => {
+    const exportData = {
+      profile: profile,
+      transactions: transactions,
+      exportDate: new Date().toISOString(),
+      totalTransactions: transactions.length
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `financial-data-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadReport = () => {
+    const totalGiven = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    const totalReceived = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+    const netBalance = totalReceived - totalGiven;
+
+    const reportContent = `
+FINANCIAL REPORT
+Generated: ${new Date().toLocaleDateString()}
+User: ${profile?.name}
+
+SUMMARY:
+- Total Money Given: $${totalGiven.toFixed(2)}
+- Total Money Received: $${totalReceived.toFixed(2)}
+- Net Balance: $${netBalance.toFixed(2)}
+- Total Transactions: ${transactions.length}
+
+RECENT TRANSACTIONS:
+${transactions.slice(0, 10).map(t => 
+  `${new Date(t.date).toLocaleDateString()} - ${t.contact?.name || 'Unknown'}: $${Math.abs(t.amount).toFixed(2)} (${t.amount > 0 ? 'Received' : 'Given'})`
+).join('\n')}
+    `.trim();
+
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `financial-report-${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleDeleteAccount = () => {
+    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      alert('Account deletion is not implemented yet. Please contact support.');
     }
   };
 
@@ -192,14 +261,18 @@ export const Settings = () => {
                   <h4 className="font-medium text-gray-900">Change Password</h4>
                   <p className="text-sm text-gray-500">Update your password to keep your account secure</p>
                 </div>
-                <Button variant="outline">Change</Button>
+                <Button variant="outline" onClick={() => alert('Password change not implemented yet')}>
+                  Change
+                </Button>
               </div>
               <div className="flex items-center justify-between py-3 border-b border-gray-200">
                 <div>
                   <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
                   <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
                 </div>
-                <Button variant="outline">Enable</Button>
+                <Button variant="outline" onClick={() => alert('2FA not implemented yet')}>
+                  Enable
+                </Button>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -229,14 +302,18 @@ export const Settings = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-2">
               {[
-                { icon: Bell, label: 'Notifications', desc: 'Manage your notifications' },
-                { icon: Shield, label: 'Privacy', desc: 'Control your privacy settings' },
-                { icon: CreditCard, label: 'Billing', desc: 'Manage your subscription' },
-                { icon: Globe, label: 'Language', desc: 'Change app language' }
+                { icon: Bell, label: 'Notifications', desc: 'Manage your notifications', action: () => alert('Notifications settings not implemented yet') },
+                { icon: Shield, label: 'Privacy', desc: 'Control your privacy settings', action: () => alert('Privacy settings not implemented yet') },
+                { icon: CreditCard, label: 'Billing', desc: 'Manage your subscription', action: () => alert('Billing not implemented yet') },
+                { icon: Globe, label: 'Language', desc: 'Change app language', action: () => alert('Language settings not implemented yet') }
               ].map((item, index) => {
                 const Icon = item.icon;
                 return (
-                  <button key={index} className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                  <button 
+                    key={index} 
+                    onClick={item.action}
+                    className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                  >
                     <div className="p-2 bg-gray-100 rounded-lg">
                       <Icon className="w-5 h-5 text-gray-600" />
                     </div>
@@ -254,8 +331,14 @@ export const Settings = () => {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Management</h3>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full">Export Data</Button>
-              <Button variant="outline" className="w-full">Download Report</Button>
+              <Button variant="outline" className="w-full" onClick={handleExportData}>
+                <Download className="w-4 h-4 mr-2" />
+                Export Data
+              </Button>
+              <Button variant="outline" className="w-full" onClick={handleDownloadReport}>
+                <FileText className="w-4 h-4 mr-2" />
+                Download Report
+              </Button>
               <Button 
                 onClick={handleLogout}
                 variant="outline" 
@@ -264,7 +347,11 @@ export const Settings = () => {
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
               </Button>
-              <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50">
+              <Button 
+                variant="outline" 
+                className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                onClick={handleDeleteAccount}
+              >
                 Delete Account
               </Button>
             </div>

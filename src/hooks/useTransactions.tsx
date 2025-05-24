@@ -43,7 +43,6 @@ export const useTransactions = () => {
 
       if (error) throw error;
       
-      // Transform the data to match our Transaction interface
       const transformedData: Transaction[] = (data || []).map(item => ({
         id: item.id,
         amount: Number(item.amount),
@@ -81,6 +80,7 @@ export const useTransactions = () => {
     description: string;
     contact_id?: string;
     category_id?: string;
+    date?: string;
   }) => {
     if (!user) return;
 
@@ -90,7 +90,8 @@ export const useTransactions = () => {
         .insert({
           ...transactionData,
           user_id: user.id,
-          amount: transactionData.type === 'given' ? -Math.abs(transactionData.amount) : Math.abs(transactionData.amount)
+          amount: transactionData.type === 'given' ? -Math.abs(transactionData.amount) : Math.abs(transactionData.amount),
+          date: transactionData.date || new Date().toISOString()
         })
         .select(`
           *,

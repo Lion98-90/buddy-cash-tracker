@@ -5,12 +5,13 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line } fro
 import { useTransactions } from '../hooks/useTransactions';
 import { useContacts } from '../hooks/useContacts';
 import { useAuth } from '../hooks/useAuth';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 export const Reports = () => {
   const { transactions } = useTransactions();
   const { contacts } = useContacts();
   const { profile } = useAuth();
+  const [dateRange, setDateRange] = useState('all');
 
   const getCurrencySymbol = (currencyCode: string) => {
     const symbols: { [key: string]: string } = {
@@ -21,13 +22,37 @@ export const Reports = () => {
 
   const currencySymbol = getCurrencySymbol(profile?.currency || 'USD');
 
+  const filteredTransactions = useMemo(() => {
+    if (dateRange === 'all') return transactions;
+    
+    const now = new Date();
+    const startDate = new Date();
+    
+    switch (dateRange) {
+      case 'week':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case 'quarter':
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+      case 'year':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+    }
+    
+    return transactions.filter(t => new Date(t.date) >= startDate);
+  }, [transactions, dateRange]);
+
   const monthlyData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentYear = new Date().getFullYear();
     
     const monthlyStats = months.map(month => {
       const monthIndex = months.indexOf(month);
-      const monthTransactions = transactions.filter(t => {
+      const monthTransactions = filteredTransactions.filter(t => {
         const transactionDate = new Date(t.date);
         return transactionDate.getFullYear() === currentYear && transactionDate.getMonth() === monthIndex;
       });
@@ -44,14 +69,14 @@ export const Reports = () => {
     });
 
     return monthlyStats;
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const summaryStats = useMemo(() => {
-    const totalGiven = transactions
+    const totalGiven = filteredTransactions
       .filter(t => t.amount < 0)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
     
-    const totalReceived = transactions
+    const totalReceived = filteredTransactions
       .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
     
@@ -62,13 +87,13 @@ export const Reports = () => {
       { 
         title: 'Total Given', 
         value: `${currencySymbol}${totalGiven.toFixed(0)}`, 
-        change: transactions.length > 0 ? '+12%' : '0%', 
+        change: filteredTransactions.length > 0 ? '+12%' : '0%', 
         color: 'text-red-600' 
       },
       { 
         title: 'Total Received', 
         value: `${currencySymbol}${totalReceived.toFixed(0)}`, 
-        change: transactions.length > 0 ? '+8%' : '0%', 
+        change: filteredTransactions.length > 0 ? '+8%' : '0%', 
         color: 'text-green-600' 
       },
       { 
@@ -84,7 +109,7 @@ export const Reports = () => {
         color: 'text-blue-600' 
       }
     ];
-  }, [transactions, contacts, currencySymbol]);
+  }, [filteredTransactions, contacts, currencySymbol]);
 
   const topOwedToYou = useMemo(() => {
     return contacts
@@ -108,6 +133,25 @@ export const Reports = () => {
       }));
   }, [contacts]);
 
+  const handleExportReport = () => {
+    const reportData = {
+      summary: summaryStats,
+      monthlyData,
+      topOwedToYou,
+      topYouOwe,
+      dateRange,
+      generatedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `financial-report-${dateRange}-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -117,11 +161,18 @@ export const Reports = () => {
           <p className="text-gray-600 mt-1">Detailed analytics of your transactions</p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline">
-            <Calendar className="w-4 h-4 mr-2" />
-            Date Range
-          </Button>
-          <Button variant="outline">
+          <select 
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Time</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last Month</option>
+            <option value="quarter">Last 3 Months</option>
+            <option value="year">Last Year</option>
+          </select>
+          <Button variant="outline" onClick={handleExportReport}>
             <Download className="w-4 h-4 mr-2" />
             Export Report
           </Button>
