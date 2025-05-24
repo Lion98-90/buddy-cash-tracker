@@ -28,9 +28,13 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const handleLogout = () => {
-    signOut();
-    window.location.href = '/';
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const toggleMobileMenu = () => {
@@ -39,10 +43,10 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button - Positioned with higher z-index */}
       <button
         onClick={toggleMobileMenu}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md"
+        className="lg:hidden fixed top-4 left-4 z-[60] p-2 rounded-lg bg-white shadow-md"
       >
         <Menu className="w-6 h-6 text-gray-600" />
       </button>
@@ -50,14 +54,14 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-[40] lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out
+        fixed lg:static inset-y-0 left-0 z-[50] w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:shadow-none
       `}>
