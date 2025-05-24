@@ -199,7 +199,7 @@ export const Transactions = () => {
                   onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select Category</option>
+                  <option value="">Select Category (Optional)</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}

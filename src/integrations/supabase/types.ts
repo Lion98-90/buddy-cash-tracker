@@ -99,6 +99,7 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          category_id: string | null
           contact_id: string | null
           created_at: string | null
           date: string | null
@@ -110,6 +111,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          category_id?: string | null
           contact_id?: string | null
           created_at?: string | null
           date?: string | null
@@ -121,6 +123,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          category_id?: string | null
           contact_id?: string | null
           created_at?: string | null
           date?: string | null
@@ -131,6 +134,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_contact_id_fkey"
             columns: ["contact_id"]

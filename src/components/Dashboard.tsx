@@ -35,21 +35,11 @@ export const Dashboard = () => {
       .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
     
-    const totalBalance = totalReceived - totalGiven;
     const activeContacts = contacts.filter(c => c.balance !== 0).length;
 
     return [
       {
-        title: 'Total Balance',
-        value: `${currencySymbol}${totalBalance.toFixed(2)}`,
-        change: '+8.2%',
-        trend: 'up',
-        icon: DollarSign,
-        color: totalBalance >= 0 ? 'text-green-600' : 'text-red-600',
-        bgColor: totalBalance >= 0 ? 'bg-green-50' : 'bg-red-50'
-      },
-      {
-        title: 'Money Given',
+        title: 'Total Expenses',
         value: `${currencySymbol}${totalGiven.toFixed(2)}`,
         change: '+2.1%',
         trend: 'up',
@@ -115,8 +105,8 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Cards - Removed Balance Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
