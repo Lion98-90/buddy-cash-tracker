@@ -2,23 +2,111 @@
 import { Calendar, Download, TrendingUp, DollarSign } from 'lucide-react';
 import { Button } from './ui/button';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useTransactions } from '../hooks/useTransactions';
+import { useContacts } from '../hooks/useContacts';
+import { useAuth } from '../hooks/useAuth';
+import { useMemo } from 'react';
 
 export const Reports = () => {
-  const monthlyData = [
-    { month: 'Jan', given: 1200, received: 800 },
-    { month: 'Feb', given: 1500, received: 1200 },
-    { month: 'Mar', given: 900, received: 1500 },
-    { month: 'Apr', given: 1800, received: 1000 },
-    { month: 'May', given: 1100, received: 1800 },
-    { month: 'Jun', given: 1600, received: 1300 }
-  ];
+  const { transactions } = useTransactions();
+  const { contacts } = useContacts();
+  const { profile } = useAuth();
 
-  const summaryStats = [
-    { title: 'Total Given', value: '$8,200', change: '+12%', color: 'text-red-600' },
-    { title: 'Total Received', value: '$7,600', change: '+8%', color: 'text-green-600' },
-    { title: 'Net Balance', value: '-$600', change: '-5%', color: 'text-orange-600' },
-    { title: 'Active People', value: '24', change: '+3', color: 'text-blue-600' }
-  ];
+  const getCurrencySymbol = (currencyCode: string) => {
+    const symbols: { [key: string]: string } = {
+      'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥', 'CAD': 'C$', 'AUD': 'A$'
+    };
+    return symbols[currencyCode] || '$';
+  };
+
+  const currencySymbol = getCurrencySymbol(profile?.currency || 'USD');
+
+  const monthlyData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
+    
+    const monthlyStats = months.map(month => {
+      const monthIndex = months.indexOf(month);
+      const monthTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate.getFullYear() === currentYear && transactionDate.getMonth() === monthIndex;
+      });
+
+      const given = monthTransactions
+        .filter(t => t.amount < 0)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      
+      const received = monthTransactions
+        .filter(t => t.amount > 0)
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      return { month, given: Math.round(given), received: Math.round(received) };
+    });
+
+    return monthlyStats;
+  }, [transactions]);
+
+  const summaryStats = useMemo(() => {
+    const totalGiven = transactions
+      .filter(t => t.amount < 0)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    
+    const totalReceived = transactions
+      .filter(t => t.amount > 0)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const netBalance = totalReceived - totalGiven;
+    const activeContacts = contacts.filter(c => c.balance !== 0).length;
+
+    return [
+      { 
+        title: 'Total Given', 
+        value: `${currencySymbol}${totalGiven.toFixed(0)}`, 
+        change: '+12%', 
+        color: 'text-red-600' 
+      },
+      { 
+        title: 'Total Received', 
+        value: `${currencySymbol}${totalReceived.toFixed(0)}`, 
+        change: '+8%', 
+        color: 'text-green-600' 
+      },
+      { 
+        title: 'Net Balance', 
+        value: `${netBalance >= 0 ? currencySymbol : '-' + currencySymbol}${Math.abs(netBalance).toFixed(0)}`, 
+        change: netBalance >= 0 ? '+' : '-', 
+        color: netBalance >= 0 ? 'text-green-600' : 'text-red-600' 
+      },
+      { 
+        title: 'Active People', 
+        value: activeContacts.toString(), 
+        change: `+${Math.max(0, activeContacts)}`, 
+        color: 'text-blue-600' 
+      }
+    ];
+  }, [transactions, contacts, currencySymbol]);
+
+  const topOwedToYou = useMemo(() => {
+    return contacts
+      .filter(c => c.balance > 0)
+      .sort((a, b) => b.balance - a.balance)
+      .slice(0, 4)
+      .map(contact => ({
+        name: contact.name,
+        amount: contact.balance
+      }));
+  }, [contacts]);
+
+  const topYouOwe = useMemo(() => {
+    return contacts
+      .filter(c => c.balance < 0)
+      .sort((a, b) => a.balance - b.balance)
+      .slice(0, 4)
+      .map(contact => ({
+        name: contact.name,
+        amount: Math.abs(contact.balance)
+      }));
+  }, [contacts]);
 
   return (
     <div className="space-y-6">
@@ -118,48 +206,46 @@ export const Reports = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top People (They Owe You)</h3>
           <div className="space-y-4">
-            {[
-              { name: 'John Doe', amount: 250 },
-              { name: 'Mike Johnson', amount: 180 },
-              { name: 'Alex Brown', amount: 150 },
-              { name: 'Chris Wilson', amount: 120 }
-            ].map((person, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-600">
-                      {person.name.split(' ').map(n => n[0]).join('')}
-                    </span>
+            {topOwedToYou.length > 0 ? (
+              topOwedToYou.map((person, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-600">
+                        {person.name.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    <span className="font-medium text-gray-900">{person.name}</span>
                   </div>
-                  <span className="font-medium text-gray-900">{person.name}</span>
+                  <span className="font-semibold text-green-600">+{currencySymbol}{person.amount.toFixed(0)}</span>
                 </div>
-                <span className="font-semibold text-green-600">+${person.amount}</span>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No one owes you money</p>
+            )}
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top People (You Owe Them)</h3>
           <div className="space-y-4">
-            {[
-              { name: 'Emma Wilson', amount: 300 },
-              { name: 'Sarah Smith', amount: 220 },
-              { name: 'Lisa Davis', amount: 175 },
-              { name: 'Tom Anderson', amount: 95 }
-            ].map((person, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-600">
-                      {person.name.split(' ').map(n => n[0]).join('')}
-                    </span>
+            {topYouOwe.length > 0 ? (
+              topYouOwe.map((person, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-600">
+                        {person.name.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    <span className="font-medium text-gray-900">{person.name}</span>
                   </div>
-                  <span className="font-medium text-gray-900">{person.name}</span>
+                  <span className="font-semibold text-red-600">-{currencySymbol}{person.amount.toFixed(0)}</span>
                 </div>
-                <span className="font-semibold text-red-600">-${person.amount}</span>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">You don't owe anyone money</p>
+            )}
           </div>
         </div>
       </div>

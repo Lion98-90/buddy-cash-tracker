@@ -1,7 +1,6 @@
 
 import { DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { ExpenseChart } from './ExpenseChart';
-import { BalanceChart } from './BalanceChart';
 import { useAuth } from '../hooks/useAuth';
 import { useTransactions } from '../hooks/useTransactions';
 import { useContacts } from '../hooks/useContacts';
@@ -139,13 +138,12 @@ export const Dashboard = () => {
         })}
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Expense Chart - Now using real data */}
+      <div className="grid grid-cols-1 gap-6">
         <ExpenseChart />
-        <BalanceChart />
       </div>
 
-      {/* Recent Activity - Removed Portfolio Score */}
+      {/* Recent Activity */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
         <div className="space-y-4">

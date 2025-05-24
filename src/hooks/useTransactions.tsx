@@ -10,10 +10,15 @@ export interface Transaction {
   description: string | null;
   date: string;
   contact_id: string | null;
+  category_id: string | null;
   contact?: {
     id: string;
     name: string;
     phone: string | null;
+  };
+  category?: {
+    id: string;
+    name: string;
   };
 }
 
@@ -30,7 +35,8 @@ export const useTransactions = () => {
         .from('transactions')
         .select(`
           *,
-          contact:contacts(id, name, phone)
+          contact:contacts(id, name, phone),
+          category:categories(id, name)
         `)
         .eq('user_id', user.id)
         .order('date', { ascending: false });
@@ -45,10 +51,15 @@ export const useTransactions = () => {
         description: item.description,
         date: item.date,
         contact_id: item.contact_id,
+        category_id: item.category_id,
         contact: item.contact ? {
           id: item.contact.id,
           name: item.contact.name,
           phone: item.contact.phone
+        } : undefined,
+        category: item.category ? {
+          id: item.category.id,
+          name: item.category.name
         } : undefined
       }));
       
@@ -69,6 +80,7 @@ export const useTransactions = () => {
     type: 'given' | 'received';
     description: string;
     contact_id?: string;
+    category_id?: string;
   }) => {
     if (!user) return;
 
@@ -82,7 +94,8 @@ export const useTransactions = () => {
         })
         .select(`
           *,
-          contact:contacts(id, name, phone)
+          contact:contacts(id, name, phone),
+          category:categories(id, name)
         `)
         .single();
 
@@ -95,10 +108,15 @@ export const useTransactions = () => {
         description: data.description,
         date: data.date,
         contact_id: data.contact_id,
+        category_id: data.category_id,
         contact: data.contact ? {
           id: data.contact.id,
           name: data.contact.name,
           phone: data.contact.phone
+        } : undefined,
+        category: data.category ? {
+          id: data.category.id,
+          name: data.category.name
         } : undefined
       };
       

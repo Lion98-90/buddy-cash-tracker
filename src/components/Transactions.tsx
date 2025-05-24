@@ -5,18 +5,21 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useTransactions } from '../hooks/useTransactions';
 import { useContacts } from '../hooks/useContacts';
+import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../hooks/useAuth';
 
 export const Transactions = () => {
   const { profile } = useAuth();
   const { transactions, addTransaction } = useTransactions();
   const { contacts, addContact } = useContacts();
+  const { categories } = useCategories();
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
     personName: '',
     amount: '',
     type: 'given',
-    description: ''
+    description: '',
+    categoryId: ''
   });
 
   const getCurrencySymbol = (currencyCode: string) => {
@@ -50,10 +53,11 @@ export const Transactions = () => {
         amount: parseFloat(formData.amount),
         type: formData.type as 'given' | 'received',
         description: formData.description,
-        contact_id: contactId
+        contact_id: contactId,
+        category_id: formData.categoryId || null
       });
 
-      setFormData({ personName: '', amount: '', type: 'given', description: '' });
+      setFormData({ personName: '', amount: '', type: 'given', description: '', categoryId: '' });
       setShowAddForm(false);
     } catch (error) {
       console.error('Error adding transaction:', error);
@@ -119,7 +123,15 @@ export const Transactions = () => {
                     <div>
                       <p className="font-medium text-gray-900">{transaction.contact?.name || 'Unknown'}</p>
                       <p className="text-sm text-gray-500">{transaction.description}</p>
-                      <p className="text-xs text-gray-400">{new Date(transaction.date).toLocaleDateString()}</p>
+                      <div className="flex items-center space-x-2 text-xs text-gray-400">
+                        <span>{new Date(transaction.date).toLocaleDateString()}</span>
+                        {transaction.category && (
+                          <>
+                            <span>•</span>
+                            <span className="bg-gray-100 px-2 py-1 rounded">{transaction.category.name}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -178,6 +190,21 @@ export const Transactions = () => {
                 >
                   <option value="given">Money Given</option>
                   <option value="received">Money Received</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select 
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
