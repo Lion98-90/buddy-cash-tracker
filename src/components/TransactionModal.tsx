@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { X, Calendar, Edit, Trash2, Check } from 'lucide-react';
+import { X, Calendar, Edit, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useTransactions, Transaction } from '../hooks/useTransactions';
@@ -16,7 +16,7 @@ interface TransactionModalProps {
 
 export const TransactionModal = ({ transaction, isOpen, onClose, onUpdate }: TransactionModalProps) => {
   const { profile } = useAuth();
-  const { deleteTransaction, updateTransaction } = useTransactions();
+  const { deleteTransaction } = useTransactions();
   const { categories } = useCategories();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -35,21 +35,6 @@ export const TransactionModal = ({ transaction, isOpen, onClose, onUpdate }: Tra
 
   const currencySymbol = getCurrencySymbol(profile?.currency || 'USD');
 
-  const handleSave = async () => {
-    try {
-      await updateTransaction(transaction.id, {
-        amount: parseFloat(editData.amount),
-        description: editData.description,
-        category_id: editData.categoryId || null,
-        date: editData.date
-      });
-      setIsEditing(false);
-      onUpdate?.();
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-    }
-  };
-
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this transaction?')) {
       try {
@@ -66,35 +51,35 @@ export const TransactionModal = ({ transaction, isOpen, onClose, onUpdate }: Tra
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transaction Details</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Transaction Details</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
           {/* Contact Info */}
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
-              <span className="font-medium text-gray-600 dark:text-gray-300">
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+              <span className="font-medium text-gray-600">
                 {(transaction.contact?.name || 'Unknown').split(' ').map(n => n[0]).join('')}
               </span>
             </div>
             <div>
-              <p className="font-medium text-gray-900 dark:text-white">{transaction.contact?.name || 'Unknown'}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{transaction.contact?.phone || 'No phone'}</p>
+              <p className="font-medium text-gray-900">{transaction.contact?.name || 'Unknown'}</p>
+              <p className="text-sm text-gray-500">{transaction.contact?.phone || 'No phone'}</p>
             </div>
           </div>
 
           {/* Amount */}
           <div className="text-center py-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Amount</p>
+            <p className="text-sm text-gray-500 mb-1">Amount</p>
             <p className={`text-3xl font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
               {transaction.amount > 0 ? '+' : ''}{currencySymbol}{Math.abs(transaction.amount).toFixed(2)}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-500 mt-1">
               {transaction.amount > 0 ? 'Money Received' : 'Money Given'}
             </p>
           </div>
@@ -102,97 +87,44 @@ export const TransactionModal = ({ transaction, isOpen, onClose, onUpdate }: Tra
           {/* Details */}
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-              {isEditing ? (
-                <Input 
-                  value={editData.description}
-                  onChange={(e) => setEditData({...editData, description: e.target.value})}
-                  className="dark:bg-gray-700 dark:text-white"
-                />
-              ) : (
-                <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-2 rounded">{transaction.description || 'No description'}</p>
-              )}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{transaction.description || 'No description'}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
-              {isEditing ? (
-                <select 
-                  value={editData.categoryId}
-                  onChange={(e) => setEditData({...editData, categoryId: e.target.value})}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">Select Category (Optional)</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-2 rounded">{transaction.category?.name || 'No category'}</p>
-              )}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{transaction.category?.name || 'No category'}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
-              {isEditing ? (
-                <Input 
-                  type="date"
-                  value={editData.date}
-                  onChange={(e) => setEditData({...editData, date: e.target.value})}
-                  className="dark:bg-gray-700 dark:text-white"
-                />
-              ) : (
-                <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  {new Date(transaction.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              )}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                {new Date(transaction.date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-3 pt-4 border-t dark:border-gray-600">
-            {isEditing ? (
-              <>
-                <Button 
-                  onClick={handleSave}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Save
-                </Button>
-                <Button 
-                  onClick={() => setIsEditing(false)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  onClick={() => setIsEditing(true)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button 
-                  onClick={handleDelete}
-                  variant="outline"
-                  className="flex-1 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              </>
-            )}
+          <div className="flex space-x-3 pt-4 border-t">
+            <Button 
+              onClick={() => setIsEditing(true)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
+            <Button 
+              onClick={handleDelete}
+              variant="outline"
+              className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </Button>
           </div>
         </div>
       </div>
