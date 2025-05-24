@@ -93,15 +93,15 @@ export const ExpenseChart = () => {
       <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-gray-100">
         <div className="text-center">
           <p className="text-sm text-gray-500">Daily</p>
-          <p className="text-lg font-semibold text-gray-900">${(totalExpenses / 30).toFixed(2)}</p>
+          <p className="text-lg font-semibold text-gray-900">₹{(totalExpenses / 30).toFixed(2)}</p>
         </div>
         <div className="text-center">
           <p className="text-sm text-gray-500">Weekly</p>
-          <p className="text-lg font-semibold text-gray-900">${(totalExpenses / 4).toFixed(2)}</p>
+          <p className="text-lg font-semibold text-gray-900">₹{(totalExpenses / 4).toFixed(2)}</p>
         </div>
         <div className="text-center">
           <p className="text-sm text-gray-500">Monthly</p>
-          <p className="text-lg font-semibold text-gray-900">${totalExpenses.toFixed(2)}</p>
+          <p className="text-lg font-semibold text-gray-900">₹{totalExpenses.toFixed(2)}</p>
         </div>
       </div>
     </div>
