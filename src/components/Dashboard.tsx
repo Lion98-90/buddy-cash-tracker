@@ -98,8 +98,20 @@ export const Dashboard = () => {
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex -space-x-2">
-           <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108755-2616b612b1ab?w=32&h=32&fit=crop&crop=face" alt="User" />
-        </div>
+            {profile?.avatar ? (
+              <img 
+                className="w-8 h-8 rounded-full border-2 border-white" 
+                src={profile.avatar} 
+                alt="Profile" 
+              />
+            ) : (
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center border-2 border-white">
+                <span className="text-xs font-bold text-white">
+                  {profile?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                </span>
+              </div>
+            )}
+          </div>
           <span className="text-sm text-gray-500">{profile?.name}</span>
         </div>
       </div>
@@ -133,57 +145,32 @@ export const Dashboard = () => {
         <BalanceChart />
       </div>
 
-      {/* Portfolio Score and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Portfolio Score</h3>
-            <div className="text-2xl font-bold text-gray-900">86.32 <span className="text-sm text-gray-500">{profile?.currency || 'USD'}</span></div>
-          </div>
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-orange-600 text-sm">🏆</span>
-            </div>
-            <span className="text-gray-700">Portfolio Score</span>
-          </div>
-          <div className="space-y-2">
-            {[40, 60, 30, 80, 45, 70, 55, 90, 35].map((height, index) => (
-              <div key={index} className="flex items-end space-x-1">
-                <div 
-                  className="bg-orange-200 rounded-sm" 
-                  style={{ width: '8px', height: `${height * 0.5}px` }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
-          <div className="space-y-4">
-            {recentTransactions.length > 0 ? (
-              recentTransactions.map((transaction, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-gray-600">
-                        {transaction.name.split(' ').map(n => n[0]).join('')}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{transaction.name}</p>
-                      <p className="text-sm text-gray-500">{transaction.time}</p>
-                    </div>
+      {/* Recent Activity - Removed Portfolio Score */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
+        <div className="space-y-4">
+          {recentTransactions.length > 0 ? (
+            recentTransactions.map((transaction, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-600">
+                      {transaction.name.split(' ').map(n => n[0]).join('')}
+                    </span>
                   </div>
-                  <span className={`font-semibold ${transaction.type === 'received' ? 'text-green-600' : 'text-red-600'}`}>
-                    {transaction.amount}
-                  </span>
+                  <div>
+                    <p className="font-medium text-gray-900">{transaction.name}</p>
+                    <p className="text-sm text-gray-500">{transaction.time}</p>
+                  </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">No transactions yet</p>
-            )}
-          </div>
+                <span className={`font-semibold ${transaction.type === 'received' ? 'text-green-600' : 'text-red-600'}`}>
+                  {transaction.amount}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500 text-center py-4">No transactions yet</p>
+          )}
         </div>
       </div>
     </div>

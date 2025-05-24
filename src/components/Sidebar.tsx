@@ -1,3 +1,4 @@
+
 import { 
   Home, 
   CreditCard, 
@@ -15,7 +16,7 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
-  const { user, logout } = useAuth();
+  const { profile, signOut } = useAuth();
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -26,7 +27,7 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
   ];
 
   const handleLogout = () => {
-    logout();
+    signOut();
     window.location.href = '/';
   };
 
@@ -39,7 +40,7 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">BuddyCash</h1>
-            <p className="text-sm text-gray-500">Welcome, {user?.name?.split(' ')[0]}</p>
+            <p className="text-sm text-gray-500">Welcome, {profile?.name?.split(' ')[0] || 'User'}</p>
           </div>
         </div>
       </div>

@@ -36,7 +36,23 @@ export const useTransactions = () => {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      
+      // Transform the data to match our Transaction interface
+      const transformedData: Transaction[] = (data || []).map(item => ({
+        id: item.id,
+        amount: Number(item.amount),
+        type: item.type as 'given' | 'received',
+        description: item.description,
+        date: item.date,
+        contact_id: item.contact_id,
+        contact: item.contact ? {
+          id: item.contact.id,
+          name: item.contact.name,
+          phone: item.contact.phone
+        } : undefined
+      }));
+      
+      setTransactions(transformedData);
     } catch (error) {
       console.error('Error fetching transactions:', error);
     } finally {
@@ -72,10 +88,43 @@ export const useTransactions = () => {
 
       if (error) throw error;
       
-      setTransactions(prev => [data, ...prev]);
-      return data;
+      const transformedData: Transaction = {
+        id: data.id,
+        amount: Number(data.amount),
+        type: data.type as 'given' | 'received',
+        description: data.description,
+        date: data.date,
+        contact_id: data.contact_id,
+        contact: data.contact ? {
+          id: data.contact.id,
+          name: data.contact.name,
+          phone: data.contact.phone
+        } : undefined
+      };
+      
+      setTransactions(prev => [transformedData, ...prev]);
+      return transformedData;
     } catch (error) {
       console.error('Error adding transaction:', error);
+      throw error;
+    }
+  };
+
+  const deleteTransaction = async (transactionId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      setTransactions(prev => prev.filter(t => t.id !== transactionId));
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
       throw error;
     }
   };
@@ -84,6 +133,7 @@ export const useTransactions = () => {
     transactions,
     isLoading,
     addTransaction,
+    deleteTransaction,
     refetch: fetchTransactions
   };
 };
