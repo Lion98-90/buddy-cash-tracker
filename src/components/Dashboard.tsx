@@ -21,7 +21,7 @@ export const Dashboard = () => {
       'CAD': 'C$',
       'AUD': 'A$'
     };
-    return symbols[currencyCode] || '$';
+    return symbols[currencyCode] || '₹';
   };
 
   const currencySymbol = getCurrencySymbol(profile?.currency || 'USD');
