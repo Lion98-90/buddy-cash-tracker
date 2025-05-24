@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Edit, Bell, Shield, CreditCard, Globe, LogOut, Clock, Download, FileText } from 'lucide-react';
+import { Camera, Edit, Bell, Shield, CreditCard, Globe, LogOut, Settings as SettingsIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../hooks/useAuth';
@@ -9,7 +9,6 @@ export const Settings = () => {
   const { profile, updateProfile, signOut } = useAuth();
   const { transactions } = useTransactions();
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [formData, setFormData] = useState({
     name: profile?.name || '',
     email: profile?.email || '',
@@ -17,41 +16,6 @@ export const Settings = () => {
     address: profile?.address || '',
     currency: profile?.currency || 'USD'
   });
-
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'de', name: 'Deutsch' },
-    { code: 'it', name: 'Italiano' },
-    { code: 'pt', name: 'Português' },
-    { code: 'ru', name: 'Русский' },
-    { code: 'zh', name: '中文' },
-    { code: 'ja', name: '日本語' },
-    { code: 'ko', name: '한국어' }
-  ];
-
-  // Real login history based on recent activity
-  const loginHistory = [
-    { 
-      date: new Date().toLocaleString(), 
-      device: 'Current Session',
-      location: 'Active Now',
-      ip: '192.168.1.1'
-    },
-    { 
-      date: new Date(Date.now() - 86400000).toLocaleString(), 
-      device: 'Chrome on Windows',
-      location: 'New York, USA',
-      ip: '192.168.1.2'
-    },
-    { 
-      date: new Date(Date.now() - 172800000).toLocaleString(), 
-      device: 'Mobile Browser',
-      location: 'London, UK',
-      ip: '192.168.1.3'
-    }
-  ];
 
   const handleSave = async () => {
     try {
@@ -71,65 +35,9 @@ export const Settings = () => {
     }
   };
 
-  const handleLanguageChange = (language: string) => {
-    setSelectedLanguage(language);
-    // Here you would typically implement language change logic
-    // For now, we'll just show an alert
-    alert(`Language changed to ${languages.find(l => l.code === language)?.name}`);
-  };
-
-  const handleExportData = () => {
-    const exportData = {
-      profile: profile,
-      transactions: transactions,
-      exportDate: new Date().toISOString(),
-      totalTransactions: transactions.length
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `financial-data-export-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadReport = () => {
-    const totalGiven = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    const totalReceived = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
-    const netBalance = totalReceived - totalGiven;
-
-    const reportContent = `
-FINANCIAL REPORT
-Generated: ${new Date().toLocaleDateString()}
-User: ${profile?.name}
-
-SUMMARY:
-- Total Money Given: $${totalGiven.toFixed(2)}
-- Total Money Received: $${totalReceived.toFixed(2)}
-- Net Balance: $${netBalance.toFixed(2)}
-- Total Transactions: ${transactions.length}
-
-RECENT TRANSACTIONS:
-${transactions.slice(0, 10).map(t => 
-  `${new Date(t.date).toLocaleDateString()} - ${t.contact?.name || 'Unknown'}: $${Math.abs(t.amount).toFixed(2)} (${t.amount > 0 ? 'Received' : 'Given'})`
-).join('\n')}
-    `.trim();
-
-    const blob = new Blob([reportContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `financial-report-${new Date().toISOString().split('T')[0]}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
   const handleDeleteAccount = async () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       try {
-        // Here you would typically make an API call to delete the account
         await signOut();
         window.location.href = '/';
       } catch (error) {
@@ -150,7 +58,7 @@ ${transactions.slice(0, 10).map(t =>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Settings */}
+        {/* Profile Info */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
@@ -260,37 +168,14 @@ ${transactions.slice(0, 10).map(t =>
                   <h4 className="font-medium text-gray-900">Change Password</h4>
                   <p className="text-sm text-gray-500">Update your password to keep your account secure</p>
                 </div>
-                <Button variant="outline" onClick={() => alert('Password change not implemented yet')}>
-                  Change
-                </Button>
+                <Button variant="outline">Change</Button>
               </div>
               <div className="flex items-center justify-between py-3 border-b border-gray-200">
                 <div>
                   <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
                   <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
                 </div>
-                <Button variant="outline" onClick={() => alert('2FA not implemented yet')}>
-                  Enable
-                </Button>
-              </div>
-              
-              {/* Login History Section */}
-              <div className="pt-4">
-                <h4 className="font-medium text-gray-900 mb-4">Login History</h4>
-                <div className="space-y-4">
-                  {loginHistory.map((login, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">{login.device}</p>
-                        <p className="text-sm text-gray-500">{login.location}</p>
-                        <p className="text-xs text-gray-400">IP: {login.ip}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">{login.date}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <Button variant="outline">Enable</Button>
               </div>
             </div>
           </div>
@@ -298,42 +183,43 @@ ${transactions.slice(0, 10).map(t =>
 
         {/* Quick Actions */}
         <div className="space-y-6">
+          {/* Quick Stats */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Total Transactions</span>
+                <span className="font-semibold text-gray-900">{transactions.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Active People</span>
+                <span className="font-semibold text-gray-900">24</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">This Month</span>
+                <span className="font-semibold text-green-600">+$1,250</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Account Age</span>
+                <span className="font-semibold text-gray-900">11 months</span>
+              </div>
+            </div>
+          </div>
+
           {/* Settings Menu */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-2">
               {[
-                { icon: Bell, label: 'Notifications', desc: 'Manage your notifications', action: () => alert('Notifications settings not implemented yet') },
-                { icon: Shield, label: 'Privacy', desc: 'Control your privacy settings', action: () => alert('Privacy settings not implemented yet') },
-                { icon: CreditCard, label: 'Billing', desc: 'Manage your subscription', action: () => alert('Billing not implemented yet') },
-                { 
-                  icon: Globe, 
-                  label: 'Language', 
-                  desc: 'Change app language',
-                  action: () => {
-                    const select = document.createElement('select');
-                    select.className = 'w-full border border-gray-300 rounded-lg px-3 py-2';
-                    languages.forEach(lang => {
-                      const option = document.createElement('option');
-                      option.value = lang.code;
-                      option.text = lang.name;
-                      option.selected = lang.code === selectedLanguage;
-                      select.appendChild(option);
-                    });
-                    select.onchange = (e) => handleLanguageChange((e.target as HTMLSelectElement).value);
-                    const currentButton = document.activeElement as HTMLElement;
-                    currentButton.parentElement?.appendChild(select);
-                    currentButton.style.display = 'none';
-                  }
-                }
+                { icon: Bell, label: 'Notifications', desc: 'Manage your notifications' },
+                { icon: Shield, label: 'Privacy', desc: 'Control your privacy settings' },
+                { icon: CreditCard, label: 'Billing', desc: 'Manage your subscription' },
+                { icon: Globe, label: 'Language', desc: 'Change app language' },
+                { icon: SettingsIcon, label: 'Preferences', desc: 'App preferences and themes' }
               ].map((item, index) => {
                 const Icon = item.icon;
                 return (
-                  <button 
-                    key={index} 
-                    onClick={item.action}
-                    className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                  >
+                  <button key={index} className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
                     <div className="p-2 bg-gray-100 rounded-lg">
                       <Icon className="w-5 h-5 text-gray-600" />
                     </div>
@@ -347,18 +233,12 @@ ${transactions.slice(0, 10).map(t =>
             </div>
           </div>
 
-          {/* Account Management */}
+          {/* Account Actions */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Management</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full" onClick={handleExportData}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Data
-              </Button>
-              <Button variant="outline" className="w-full" onClick={handleDownloadReport}>
-                <FileText className="w-4 h-4 mr-2" />
-                Download Report
-              </Button>
+              <Button variant="outline" className="w-full">Export Data</Button>
+              <Button variant="outline" className="w-full">Download Report</Button>
               <Button 
                 onClick={handleLogout}
                 variant="outline" 
