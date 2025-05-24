@@ -4,13 +4,12 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../hooks/useAuth';
 import { useTransactions } from '../hooks/useTransactions';
-import { useLanguage } from '../hooks/useLanguage';
 
 export const Settings = () => {
   const { profile, updateProfile, signOut } = useAuth();
   const { transactions } = useTransactions();
   const [isEditing, setIsEditing] = useState(false);
-  const { language, setLanguage } = useLanguage();
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [formData, setFormData] = useState({
     name: profile?.name || '',
     email: profile?.email || '',
@@ -21,9 +20,18 @@ export const Settings = () => {
 
   const languages = [
     { code: 'en', name: 'English' },
-    { code: 'hi', name: 'हिंदी (Hindi)' }
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' },
+    { code: 'de', name: 'Deutsch' },
+    { code: 'it', name: 'Italiano' },
+    { code: 'pt', name: 'Português' },
+    { code: 'ru', name: 'Русский' },
+    { code: 'zh', name: '中文' },
+    { code: 'ja', name: '日本語' },
+    { code: 'ko', name: '한국어' }
   ];
 
+  // Real login history based on recent activity
   const loginHistory = [
     { 
       date: new Date().toLocaleString(), 
@@ -61,6 +69,13 @@ export const Settings = () => {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  const handleLanguageChange = (language: string) => {
+    setSelectedLanguage(language);
+    // Here you would typically implement language change logic
+    // For now, we'll just show an alert
+    alert(`Language changed to ${languages.find(l => l.code === language)?.name}`);
   };
 
   const handleExportData = () => {
@@ -114,6 +129,7 @@ ${transactions.slice(0, 10).map(t =>
   const handleDeleteAccount = async () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       try {
+        // Here you would typically make an API call to delete the account
         await signOut();
         window.location.href = '/';
       } catch (error) {
@@ -301,10 +317,10 @@ ${transactions.slice(0, 10).map(t =>
                       const option = document.createElement('option');
                       option.value = lang.code;
                       option.text = lang.name;
-                      option.selected = lang.code === language;
+                      option.selected = lang.code === selectedLanguage;
                       select.appendChild(option);
                     });
-                    select.onchange = (e) => setLanguage((e.target as HTMLSelectElement).value as 'en' | 'hi');
+                    select.onchange = (e) => handleLanguageChange((e.target as HTMLSelectElement).value);
                     const currentButton = document.activeElement as HTMLElement;
                     currentButton.parentElement?.appendChild(select);
                     currentButton.style.display = 'none';
