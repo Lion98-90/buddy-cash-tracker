@@ -129,6 +129,56 @@ export const useTransactions = () => {
     }
   };
 
+  const updateTransaction = async (transactionId: string, updateData: {
+    amount?: number;
+    description?: string;
+    category_id?: string | null;
+    date?: string;
+  }) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(updateData)
+        .eq('id', transactionId)
+        .eq('user_id', user.id)
+        .select(`
+          *,
+          contact:contacts(id, name, phone),
+          category:categories(id, name)
+        `)
+        .single();
+
+      if (error) throw error;
+      
+      const transformedData: Transaction = {
+        id: data.id,
+        amount: Number(data.amount),
+        type: data.type as 'given' | 'received',
+        description: data.description,
+        date: data.date,
+        contact_id: data.contact_id,
+        category_id: data.category_id,
+        contact: data.contact ? {
+          id: data.contact.id,
+          name: data.contact.name,
+          phone: data.contact.phone
+        } : undefined,
+        category: data.category ? {
+          id: data.category.id,
+          name: data.category.name
+        } : undefined
+      };
+      
+      setTransactions(prev => prev.map(t => t.id === transactionId ? transformedData : t));
+      return transformedData;
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      throw error;
+    }
+  };
+
   const deleteTransaction = async (transactionId: string) => {
     if (!user) return;
 
@@ -152,6 +202,7 @@ export const useTransactions = () => {
     transactions,
     isLoading,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     refetch: fetchTransactions
   };
