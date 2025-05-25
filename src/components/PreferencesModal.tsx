@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
@@ -21,7 +20,6 @@ export const PreferencesModal = ({ isOpen, onClose }: PreferencesModalProps) => 
         </DialogHeader>
         
         <div className="space-y-6 py-4">
-          {/* Theme Selection */}
           <div className="space-y-2">
             <Label htmlFor="theme">Theme</Label>
             <Select value={theme} onValueChange={setTheme}>
