@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -56,9 +57,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="flex-1 p-4 md:p-6 lg:p-8 w-full">
-        <div className="max-w-7xl mx-auto">
-          {renderContent()}
+      <div className="flex-1 w-full">
+        <div className="p-4 md:p-6 lg:p-8 pt-16 lg:pt-4">
+          <div className="max-w-7xl mx-auto">
+            {renderContent()}
+          </div>
         </div>
       </div>
     </div>

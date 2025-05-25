@@ -1,3 +1,4 @@
+
 import { DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { ExpenseChart } from './ExpenseChart';
 import { useAuth } from '../hooks/useAuth';
@@ -78,29 +79,29 @@ export const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {profile?.name}! Here's your financial overview</p>
+      {/* Header - Fixed for mobile responsiveness */}
+      <div className="flex items-center justify-between gap-4 px-2 lg:px-0">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 truncate">Dashboard</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base hidden sm:block">Welcome back, {profile?.name}! Here's your financial overview</p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 flex-shrink-0">
           <div className="flex -space-x-2">
             {profile?.avatar ? (
               <img 
-                className="w-8 h-8 rounded-full border-2 border-white" 
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white" 
                 src={profile.avatar} 
                 alt="Profile" 
               />
             ) : (
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center border-2 border-white">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center border-2 border-white">
                 <span className="text-xs font-bold text-white">
                   {profile?.name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </span>
               </div>
             )}
           </div>
-          <span className="text-sm text-gray-500">{profile?.name}</span>
+          <span className="text-xs sm:text-sm text-gray-500 hidden md:block">{profile?.name}</span>
         </div>
       </div>
 

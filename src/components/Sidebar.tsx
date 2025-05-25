@@ -1,3 +1,4 @@
+
 import { 
   Home, 
   CreditCard, 
@@ -47,7 +48,6 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
       <button
         onClick={toggleMobileMenu}
         className="lg:hidden fixed top-4 left-4 z-[60] p-2 rounded-lg bg-white shadow-md"
-        style={{ transform: 'translateX(-8px)' }} // Adjust position to not overlap content
       >
         <Menu className="w-6 h-6 text-gray-600" />
       </button>
