@@ -1,14 +1,19 @@
+
 import { useState } from 'react';
-import { Camera, Edit, Bell, Shield, CreditCard, Globe, LogOut, Settings as SettingsIcon } from 'lucide-react';
+import { Camera, Edit, Bell, Shield, CreditCard, Globe, LogOut, Settings as SettingsIcon, Download, FileText, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../hooks/useAuth';
 import { useTransactions } from '../hooks/useTransactions';
+import { PreferencesModal } from './PreferencesModal';
+import { useToast } from '../hooks/use-toast';
 
 export const Settings = () => {
   const { profile, updateProfile, signOut } = useAuth();
   const { transactions } = useTransactions();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
   const [formData, setFormData] = useState({
     name: profile?.name || '',
     email: profile?.email || '',
@@ -21,8 +26,17 @@ export const Settings = () => {
     try {
       await updateProfile(formData);
       setIsEditing(false);
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
     }
   };
 
@@ -32,6 +46,11 @@ export const Settings = () => {
       window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
     }
   };
 
@@ -40,11 +59,67 @@ export const Settings = () => {
       try {
         await signOut();
         window.location.href = '/';
+        toast({
+          title: "Account Deleted",
+          description: "Your account has been deleted successfully",
+        });
       } catch (error) {
         console.error('Error deleting account:', error);
-        alert('Failed to delete account. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to delete account. Please try again.",
+          variant: "destructive",
+        });
       }
     }
+  };
+
+  const handleExportData = () => {
+    const exportData = {
+      profile,
+      transactions,
+      exportedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `buddycash-data-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Complete",
+      description: "Your data has been exported successfully",
+    });
+  };
+
+  const handleDownloadReport = () => {
+    // Create a simple text report
+    const reportContent = `
+BuddyCash Transaction Report
+Generated: ${new Date().toLocaleDateString()}
+
+Total Transactions: ${transactions.length}
+Recent Activity:
+${transactions.slice(0, 10).map(t => 
+  `${t.date.split('T')[0]} - ${t.type === 'given' ? 'Given' : 'Received'} $${Math.abs(t.amount)} - ${t.description || 'No description'}`
+).join('\n')}
+    `.trim();
+
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `buddycash-report-${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Report Downloaded",
+      description: "Your transaction report has been downloaded",
+    });
   };
 
   return (
@@ -170,56 +245,30 @@ export const Settings = () => {
                 </div>
                 <Button variant="outline">Change</Button>
               </div>
-              <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                <div>
-                  <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
-                  <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-                </div>
-                <Button variant="outline">Enable</Button>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="space-y-6">
-          {/* Quick Stats */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Total Transactions</span>
-                <span className="font-semibold text-gray-900">{transactions.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Active People</span>
-                <span className="font-semibold text-gray-900">24</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">This Month</span>
-                <span className="font-semibold text-green-600">+$1,250</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Account Age</span>
-                <span className="font-semibold text-gray-900">11 months</span>
-              </div>
-            </div>
-          </div>
-
           {/* Settings Menu */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-2">
               {[
-                { icon: Bell, label: 'Notifications', desc: 'Manage your notifications' },
-                { icon: Shield, label: 'Privacy', desc: 'Control your privacy settings' },
-                { icon: CreditCard, label: 'Billing', desc: 'Manage your subscription' },
-                { icon: Globe, label: 'Language', desc: 'Change app language' },
-                { icon: SettingsIcon, label: 'Preferences', desc: 'App preferences and themes' }
+                { icon: Bell, label: 'Notifications', desc: 'Manage your notifications', action: () => toast({ title: "Coming Soon", description: "Notification settings will be available soon" }) },
+                { icon: Shield, label: 'Privacy', desc: 'Control your privacy settings', action: () => toast({ title: "Coming Soon", description: "Privacy settings will be available soon" }) },
+                { icon: CreditCard, label: 'Billing', desc: 'Manage your subscription', action: () => toast({ title: "Coming Soon", description: "Billing management will be available soon" }) },
+                { icon: Globe, label: 'Language', desc: 'Change app language', action: () => toast({ title: "Coming Soon", description: "Language selection will be available soon" }) },
+                { icon: SettingsIcon, label: 'Preferences', desc: 'App preferences and themes', action: () => setShowPreferences(true) }
               ].map((item, index) => {
                 const Icon = item.icon;
                 return (
-                  <button key={index} className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                  <button 
+                    key={index} 
+                    onClick={item.action}
+                    className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                  >
                     <div className="p-2 bg-gray-100 rounded-lg">
                       <Icon className="w-5 h-5 text-gray-600" />
                     </div>
@@ -237,8 +286,22 @@ export const Settings = () => {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full">Export Data</Button>
-              <Button variant="outline" className="w-full">Download Report</Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleExportData}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export Data
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleDownloadReport}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Download Report
+              </Button>
               <Button 
                 onClick={handleLogout}
                 variant="outline" 
@@ -252,12 +315,18 @@ export const Settings = () => {
                 className="w-full text-red-600 border-red-200 hover:bg-red-50"
                 onClick={handleDeleteAccount}
               >
+                <Trash2 className="w-4 h-4 mr-2" />
                 Delete Account
               </Button>
             </div>
           </div>
         </div>
       </div>
+
+      <PreferencesModal 
+        isOpen={showPreferences} 
+        onClose={() => setShowPreferences(false)} 
+      />
     </div>
   );
 };
