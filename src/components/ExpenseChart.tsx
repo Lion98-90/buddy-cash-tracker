@@ -85,7 +85,7 @@ export const ExpenseChart = () => {
               />
               <span className="text-sm text-gray-600">{item.name}</span>
             </div>
-            <span className="text-sm font-medium text-gray-900">${item.value}</span>
+            <span className="text-sm font-medium text-gray-900">₹{item.value}</span>
           </div>
         ))}
       </div>
