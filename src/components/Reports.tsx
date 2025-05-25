@@ -1,6 +1,9 @@
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import { Calendar, Download, TrendingUp, DollarSign } from 'lucide-react';
 import { Button } from './ui/button';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip, Legend } from 'recharts';
 import { useTransactions } from '../hooks/useTransactions';
 import { useContacts } from '../hooks/useContacts';
 import { useAuth } from '../hooks/useAuth';
@@ -215,20 +218,304 @@ For support, contact: support@buddycash.com
     `.trim();
   };
 
-  const handleExportReport = () => {
-    const pdfContent = generateDetailedPDFContent();
+  const handleExportReport = async () => {
+    const doc = new jsPDF('p', 'pt', 'a4');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const autoTable = (doc as any).autoTable;
+    const rawContent = generateDetailedPDFContent();
     
-    const blob = new Blob([pdfContent], { type: 'text/plain;charset=utf-8' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `buddycash-analytics-report-${dateRange}-${new Date().toISOString().split('T')[0]}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 40; // Standard margin in points
+
+    let yPos = margin; // Initial y position, starting from top margin
+
+    const baseFontSize = 10;
+    const titleFontSize = 18;
+    const headerFontSize = 14;
+    const chartTitleFontSize = 12; // Slightly smaller for chart titles if needed, or use headerFontSize
+    const lineSpacing = baseFontSize * 1.4; 
+    const sectionSpacing = baseFontSize * 2;
+
+    // Helper function to add new page if content overflows
+    const checkAndAddPage = (currentY: number, neededHeight: number) => {
+      if (currentY + neededHeight > pageHeight - margin) {
+        doc.addPage();
+        return margin; // Reset yPos for new page
+      }
+      return currentY;
+    };
+    
+    // Main Title
+    doc.setFontSize(titleFontSize);
+    doc.setFont(undefined, 'bold');
+    doc.text("BuddyCash Detailed Analytics Report", pageWidth / 2, yPos, { align: 'center' });
+    yPos += titleFontSize * 1.5; // Space after title
+    doc.setFont(undefined, 'normal');
+
+    // --- Chart Integration ---
+    const monthlyOverviewChartEl = document.getElementById('monthlyOverviewChartContainer');
+    const netFlowTrendChartEl = document.getElementById('netFlowTrendChartContainer');
+    let chartYPos = yPos;
+
+    if (monthlyOverviewChartEl) {
+      try {
+        yPos = checkAndAddPage(yPos, headerFontSize + lineSpacing + 200); // Approximate height for chart + title
+        doc.setFontSize(headerFontSize); // Use headerFontSize for chart titles for consistency
+        doc.setFont(undefined, 'bold');
+        doc.text("Monthly Overview Chart", margin, yPos);
+        yPos += headerFontSize * 1.2; // Consistent spacing after header
+        doc.setFont(undefined, 'normal');
+        
+        const canvas = await html2canvas(monthlyOverviewChartEl, { scale: 1.5, backgroundColor: '#FFFFFF', useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = doc.getImageProperties(imgData);
+        const imgWidth = pageWidth - margin * 2;
+        // Maintain aspect ratio, but cap height to avoid overly tall images
+        const imgHeight = Math.min((imgProps.height * imgWidth) / imgProps.width, pageHeight / 2.5); 
+        
+        yPos = checkAndAddPage(yPos, imgHeight);
+        doc.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + sectionSpacing;
+        chartYPos = yPos; // Update chartYPos to be after the first chart
+      } catch (error) {
+        console.error("Error capturing monthly overview chart:", error);
+        yPos = checkAndAddPage(yPos, lineSpacing);
+        doc.setFontSize(baseFontSize);
+        doc.text("Monthly Overview Chart: Could not be rendered.", margin, yPos);
+        yPos += lineSpacing;
+        chartYPos = yPos;
+      }
+    }
+
+    if (netFlowTrendChartEl) {
+      try {
+        yPos = checkAndAddPage(chartYPos, headerFontSize + lineSpacing + 200); // Use chartYPos
+        doc.setFontSize(headerFontSize); // Use headerFontSize
+        doc.setFont(undefined, 'bold');
+        doc.text("Net Flow Trend Chart", margin, yPos);
+        yPos += headerFontSize * 1.2; // Consistent spacing
+        doc.setFont(undefined, 'normal');
+
+        const canvas = await html2canvas(netFlowTrendChartEl, { scale: 1.5, backgroundColor: '#FFFFFF', useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = doc.getImageProperties(imgData);
+        const imgWidth = pageWidth - margin * 2;
+        const imgHeight = Math.min((imgProps.height * imgWidth) / imgProps.width, pageHeight / 2.5);
+
+        yPos = checkAndAddPage(yPos, imgHeight);
+        doc.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + sectionSpacing;
+      } catch (error) {
+        console.error("Error capturing net flow trend chart:", error);
+        yPos = checkAndAddPage(yPos, lineSpacing);
+        doc.setFontSize(baseFontSize);
+        doc.text("Net Flow Trend Chart: Could not be rendered.", margin, yPos);
+        yPos += lineSpacing;
+      }
+    }
+    // --- End Chart Integration ---
+    
+    const sections = rawContent.split(/\n={2,}\n/).map(s => s.trim());
+
+    sections.forEach(section => {
+      if (!section) return;
+      const lines = section.split('\n');
+      const header = lines.shift()?.trim();
+
+      // Skip the main title section if it was part of rawContent parsing
+      // Also skip sections that are only for footer, handled globally now.
+      if (!header || header === "BUDDYCASH DETAILED ANALYTICS REPORT" || 
+          header.startsWith("Report generated by BuddyCash") || header.startsWith("For support,")) {
+        // Add specific text from under main title (Generated, Date Range, Currency)
+        if (header === "BUDDYCASH DETAILED ANALYTICS REPORT") {
+            lines.forEach(line => {
+                if (line.trim()) {
+                    yPos = checkAndAddPage(yPos, lineSpacing);
+                    doc.setFontSize(baseFontSize);
+                    doc.text(line.trim(), margin, yPos, { maxWidth: pageWidth - margin * 2 });
+                    yPos += lineSpacing;
+                }
+            });
+            yPos += sectionSpacing / 2;
+        }
+        return; 
+      }
+      
+      yPos = checkAndAddPage(yPos, sectionSpacing); // Space before new section
+      doc.setFontSize(headerFontSize);
+      doc.setFont(undefined, 'bold');
+      doc.text(header, margin, yPos);
+      yPos += headerFontSize * 1.2; // Space after header
+      doc.setFontSize(baseFontSize);
+      doc.setFont(undefined, 'normal');
+
+      if (header.startsWith("EXECUTIVE SUMMARY")) {
+        lines.forEach(line => {
+          yPos = checkAndAddPage(yPos, lineSpacing);
+          doc.text(line.trim(), margin, yPos, { maxWidth: pageWidth - margin * 2 });
+          yPos += lineSpacing;
+        });
+      } else if (header.startsWith("MONTHLY BREAKDOWN")) {
+        const tableHeaderOriginal = lines.shift()?.split('|').map(s => s.trim()); 
+        lines.shift(); // Skip ---- line
+        const tableBody = lines.map(line => line.split('|').map(s => s.trim()));
+        if (tableHeaderOriginal && tableBody.length > 0) {
+           yPos = checkAndAddPage(yPos); 
+           autoTable({
+            head: [tableHeaderOriginal],
+            body: tableBody,
+            startY: yPos,
+            theme: 'grid',
+            headStyles: { fillColor: [22, 160, 133], halign: 'center', fontStyle: 'bold' }, // Teal
+            styles: { fontSize: baseFontSize -1, cellPadding: 3 },
+            columnStyles: {
+                0: { halign: 'left', cellWidth: 'auto'}, // Month
+                1: { halign: 'right', cellWidth: 70 }, // Given
+                2: { halign: 'right', cellWidth: 70 }, // Received
+                3: { halign: 'right', cellWidth: 70 }  // Net Balance
+            },
+            margin: { left: margin, right: margin },
+            didDrawPage: () => { yPos = margin; }
+          });
+          yPos = autoTable.previous.finalY + sectionSpacing;
+        }
+      } else if (header.startsWith("TOP PEOPLE WHO OWE YOU:")) {
+        const tableData = lines.filter(line => line.trim() && !line.startsWith('No outstanding')).map(line => {
+          const parts = line.match(/(\d+)\.\s*(.+?)\s+([\D\$€£₹¥CFA]+[\d,]+\.\d{2})/);
+          return parts ? [parts[1], parts[2].trim(), parts[3].trim()] : null;
+        }).filter(row => row !== null);
+        if (tableData.length > 0) {
+          yPos = checkAndAddPage(yPos);
+          autoTable({
+            head: [['#', 'Name', 'Amount']],
+            body: tableData,
+            startY: yPos,
+            theme: 'striped',
+            headStyles: { fillColor: [41, 128, 185], halign: 'center', fontStyle: 'bold' }, // Blue
+            styles: { fontSize: baseFontSize -1, cellPadding: 3 },
+            margin: { left: margin, right: margin },
+            didDrawPage: () => { yPos = margin; }
+          });
+          yPos = autoTable.previous.finalY + sectionSpacing;
+        } else {
+          yPos = checkAndAddPage(yPos, lineSpacing);
+          doc.text('No outstanding amounts owed to you.', margin, yPos, { maxWidth: pageWidth - margin * 2 });
+          yPos += lineSpacing;
+        }
+      } else if (header.startsWith("TOP PEOPLE YOU OWE:")) {
+         const tableData = lines.filter(line => line.trim() && !line.startsWith('No outstanding')).map(line => {
+          const parts = line.match(/(\d+)\.\s*(.+?)\s+([\D\$€£₹¥CFA]+[\d,]+\.\d{2})/);
+          return parts ? [parts[1], parts[2].trim(), parts[3].trim()] : null;
+        }).filter(row => row !== null);
+        if (tableData.length > 0) {
+          yPos = checkAndAddPage(yPos);
+          autoTable({
+            head: [['#', 'Name', 'Amount']],
+            body: tableData,
+            startY: yPos,
+            theme: 'striped',
+            headStyles: { fillColor: [231, 76, 60], halign: 'center', fontStyle: 'bold' }, // Red
+            styles: { fontSize: baseFontSize -1, cellPadding: 3 },
+            margin: { left: margin, right: margin },
+            didDrawPage: () => { yPos = margin; }
+          });
+          yPos = autoTable.previous.finalY + sectionSpacing;
+        } else {
+          yPos = checkAndAddPage(yPos, lineSpacing);
+          doc.text('No outstanding amounts you owe.', margin, yPos, { maxWidth: pageWidth - margin * 2 });
+          yPos += lineSpacing;
+        }
+      } else if (header.startsWith("DETAILED TRANSACTION HISTORY")) {
+        const summaryLineOriginal = lines.find(l => l.startsWith("Total Transactions in Period:"));
+        const actualLinesForTable = lines.filter(l => !l.startsWith("Total Transactions in Period:") && !l.startsWith("... and") && l.includes('|'));
+        const andMoreLineOriginal = lines.find(l => l.startsWith("... and"));
+
+        if(summaryLineOriginal) {
+            yPos = checkAndAddPage(yPos, lineSpacing);
+            doc.text(summaryLineOriginal.trim(), margin, yPos, { maxWidth: pageWidth - margin * 2 });
+            yPos += lineSpacing * 1.5; // More space after summary line
+        }
+        const tableData = actualLinesForTable.map(line => {
+          const parts = line.match(/(\d+)\.\s*([\d\/]+)\s*\|\s*(GIVEN|RECEIVED)\s*\|\s*([\D\$€£₹¥CFA]+[\d,]+\.\d{2})\s*\|\s*(.*)/);
+          return parts ? [parts[1], parts[2].trim(), parts[3].trim(), parts[4].trim(), parts[5].trim()] : null;
+        }).filter(row => row !== null);
+
+        if (tableData.length > 0) {
+          yPos = checkAndAddPage(yPos);
+          autoTable({
+            head: [['#', 'Date', 'Type', 'Amount', 'Description']],
+            body: tableData,
+            startY: yPos,
+            theme: 'grid',
+            headStyles: { fillColor: [52, 152, 219], halign: 'center', fontStyle: 'bold' }, // Light Blue
+            styles: { fontSize: baseFontSize -1, cellPadding: 3 },
+             columnStyles: {
+                0: { cellWidth: 30 }, // #
+                1: { cellWidth: 65 }, // Date
+                2: { cellWidth: 60 }, // Type
+                3: { cellWidth: 75, halign: 'right' }, // Amount
+                4: { cellWidth: 'auto' } // Description
+            },
+            margin: { left: margin, right: margin },
+            didDrawPage: () => { yPos = margin; }
+          });
+          yPos = autoTable.previous.finalY + sectionSpacing;
+        } else {
+          yPos = checkAndAddPage(yPos, lineSpacing);
+          const noTransactionsText = lines.find(l => l.includes("No transactions found")) || 'No transactions found for the selected period.';
+          doc.text(noTransactionsText, margin, yPos, { maxWidth: pageWidth - margin * 2 });
+          yPos += lineSpacing;
+        }
+        if(andMoreLineOriginal) {
+            yPos = checkAndAddPage(yPos, lineSpacing);
+            doc.text(andMoreLineOriginal.trim(), margin, yPos, { maxWidth: pageWidth - margin * 2 });
+            yPos += lineSpacing;
+        }
+      } else if (header.startsWith("FINANCIAL INSIGHTS") || header.startsWith("RECOMMENDATIONS")) {
+        lines.forEach(line => {
+          if (line.trim()) {
+            yPos = checkAndAddPage(yPos, lineSpacing);
+            const text = line.startsWith('•') ? line.trim() : `• ${line.trim()}`;
+            doc.text(text, margin + (line.startsWith('•') ? 0 : 10) , yPos, { maxWidth: pageWidth - margin * 2 - (line.startsWith('•') ? 0 : 10) });
+            yPos += lineSpacing * 1.1; 
+          }
+        });
+      } else { // Fallback for any other text not caught by specific handlers
+         lines.forEach(line => {
+          if (line.trim()){
+            yPos = checkAndAddPage(yPos, lineSpacing);
+            doc.text(line.trim(), margin, yPos, { maxWidth: pageWidth - margin * 2 });
+            yPos += lineSpacing;
+          }
+        });
+      }
+      yPos += sectionSpacing / 2; // Space after a section's content
+    });
+
+    // Footer on all pages
+    const footerTextLine1 = "Report generated by BuddyCash Financial Management System";
+    const footerTextLine2 = "For support, contact: support@buddycash.com";
+    const footerPageNumText = (pgNum: number, totalPgs: number) => `Page ${pgNum} of ${totalPgs}`;
+    const numPages = doc.internal.getNumberOfPages();
+    
+    doc.setFontSize(baseFontSize - 2); // Smaller font for footer
+    doc.setFont(undefined, 'italic');
+
+    for (let i = 1; i <= numPages; i++) {
+        doc.setPage(i);
+        const currentYForFooter = pageHeight - margin + (baseFontSize - 2); // Position just above bottom margin
+        doc.text(footerTextLine1, margin, currentYForFooter, { baseline: 'bottom' });
+        doc.text(footerTextLine2, margin, currentYForFooter + (baseFontSize - 2 + 2), { baseline: 'bottom' }); // Line 2 below line 1
+        doc.text(footerPageNumText(i, numPages), pageWidth - margin, currentYForFooter + (baseFontSize - 2 + 2), { align: 'right', baseline: 'bottom' });
+    }
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    doc.save(`buddycash-analytics-report-${dateRange}-${dateStr}.pdf`);
     
     toast({
       title: "Report Exported",
-      description: "Your detailed analytics report has been exported as a formatted text file",
+      description: "Your detailed analytics report has been exported as a PDF.",
     });
   };
 
@@ -280,13 +567,15 @@ For support, contact: support@buddycash.com
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Overview */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div id="monthlyOverviewChartContainer" className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Overview</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <XAxis dataKey="month" />
-                <YAxis />
+              <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                <XAxis dataKey="month" fontSize={10} />
+                <YAxis fontSize={10} tickFormatter={(value) => `${currencySymbol}${value}`} />
+                <Tooltip formatter={(value) => `${currencySymbol}${value}`}/>
+                <Legend wrapperStyle={{fontSize: "12px"}}/>
                 <Bar dataKey="given" fill="#EF4444" name="Given" />
                 <Bar dataKey="received" fill="#10B981" name="Received" />
               </BarChart>
@@ -305,26 +594,30 @@ For support, contact: support@buddycash.com
         </div>
 
         {/* Trend Analysis */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div id="netFlowTrendChartContainer" className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Net Flow Trend</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <XAxis dataKey="month" />
-                <YAxis />
+              <LineChart data={monthlyData} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                <XAxis dataKey="month" fontSize={10} />
+                <YAxis fontSize={10} tickFormatter={(value) => `${currencySymbol}${value}`} />
+                <Tooltip formatter={(value) => `${currencySymbol}${value}`}/>
+                <Legend wrapperStyle={{fontSize: "12px"}}/>
                 <Line 
                   type="monotone" 
                   dataKey="received" 
                   stroke="#10B981" 
-                  strokeWidth={3}
-                  dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                  strokeWidth={2}
+                  name="Received"
+                  dot={{ fill: '#10B981', strokeWidth: 1, r: 3 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="given" 
                   stroke="#EF4444" 
-                  strokeWidth={3}
-                  dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
+                  strokeWidth={2}
+                  name="Given"
+                  dot={{ fill: '#EF4444', strokeWidth: 1, r: 3 }}
                 />
               </LineChart>
             </ResponsiveContainer>
