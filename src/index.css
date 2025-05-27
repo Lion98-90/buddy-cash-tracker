@@ -85,6 +85,11 @@
   background-color: #21262d; /* Use a distinct dark grey for selected item */
 }
 
+/* Explicit dark mode hover background override */
+.dark .hover\:bg-gray-50:hover {
+  background-color: #21262d; /* Dark grey for hover state */
+}
+
 
 .dark .border,
 .dark .border-gray-100,
