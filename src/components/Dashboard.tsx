@@ -59,7 +59,7 @@ export const Dashboard = () => {
       {
         title: 'Active People',
         value: activeContacts.toString(),
-        change: `${Math.max(0, activeContacts - 20)}`,
+        change: '',
         trend: 'up',
         icon: Users,
         color: 'text-purple-600',
