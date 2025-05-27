@@ -105,7 +105,7 @@ export const People = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* People List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+         <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">All People</h3>
           </div>
