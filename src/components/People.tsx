@@ -1,17 +1,28 @@
-
 import { useState } from 'react';
 import { Plus, Search, MessageCircle, Phone, Users, Edit, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../hooks/useAuth';
-import { useContacts } from '../hooks/useContacts';
+import { useContacts, Contact } from '../hooks/useContacts'; // Import Contact type
 import { useTransactions } from '../hooks/useTransactions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
+
 
 export const People = () => {
   const { profile } = useAuth();
-  const { contacts, addContact } = useContacts();
+  const { contacts, addContact, deleteContact } = useContacts(); // Use deleteContact hook
   const { transactions, addTransaction, deleteTransaction } = useTransactions();
-  const [selectedPerson, setSelectedPerson] = useState(null);
+  const [selectedPerson, setSelectedPerson] = useState<Contact | null>(null); // Use Contact type
   const [showAddForm, setShowAddForm] = useState(false);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '' });
@@ -20,6 +31,9 @@ export const People = () => {
     type: 'given',
     description: ''
   });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // State for delete confirmation
+  const [personToDelete, setPersonToDelete] = useState<Contact | null>(null); // State for person to delete
+
 
   const getCurrencySymbol = (currencyCode: string) => {
     const symbols: { [key: string]: string } = {
@@ -44,7 +58,7 @@ export const People = () => {
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPerson) return;
-    
+
     try {
       await addTransaction({
         amount: parseFloat(transactionData.amount),
@@ -67,6 +81,28 @@ export const People = () => {
     }
   };
 
+  const handleDeletePerson = async () => {
+    if (!personToDelete) return;
+    try {
+      await deleteContact(personToDelete.id);
+      // If the deleted person was the selected one, clear selection
+      if (selectedPerson?.id === personToDelete.id) {
+        setSelectedPerson(null);
+      }
+      setShowDeleteConfirm(false);
+      setPersonToDelete(null);
+    } catch (error) {
+      console.error('Error deleting person:', error);
+      // Optionally show an error message to the user
+    }
+  };
+
+  const confirmDeletePerson = (person: Contact) => {
+    setPersonToDelete(person);
+    setShowDeleteConfirm(true);
+  };
+
+
   const getPersonTransactions = (contactId: string) => {
     return transactions.filter(t => t.contact_id === contactId);
   };
@@ -83,7 +119,7 @@ export const People = () => {
           <h1 className="text-3xl font-bold text-gray-900">People</h1>
           <p className="text-gray-600 mt-1">Track money given and received from people</p>
         </div>
-        <Button 
+        <Button
           onClick={() => setShowAddForm(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white"
         >
@@ -96,8 +132,8 @@ export const People = () => {
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <div className="relative">
           <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <Input 
-            placeholder="Search people..." 
+          <Input
+            placeholder="Search people..."
             className="pl-10"
           />
         </div>
@@ -113,15 +149,17 @@ export const People = () => {
             {contacts.map((person) => {
               const balance = getPersonBalance(person.id);
               return (
-                <div 
-                  key={person.id} 
+                <div
+                  key={person.id}
                   className={`px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                     selectedPerson?.id === person.id ? 'bg-blue-50 border-r-2 border-blue-600' : ''
                   }`}
-                  onClick={() => setSelectedPerson(person)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                    <div
+                       className="flex items-center space-x-4 flex-grow" // Added flex-grow
+                       onClick={() => setSelectedPerson(person)} // Clickable area for selection
+                    >
                       <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                         <span className="text-sm font-medium text-gray-600">
                           {person.name.split(' ').map(n => n[0]).join('')}
@@ -132,15 +170,24 @@ export const People = () => {
                         <p className="text-sm text-gray-500">{person.phone || 'No phone'}</p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex items-center space-x-2"> {/* Added flex and space-x */}
                       <span className={`text-lg font-semibold ${
                         balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-600'
                       }`}>
                         {balance > 0 ? '+' : ''}{currencySymbol}{Math.abs(balance).toFixed(2)}
                       </span>
-                      <p className="text-sm text-gray-500">
-                        {balance > 0 ? 'Owes you' : balance < 0 ? 'You owe' : 'Settled'}
-                      </p>
+                       {/* Delete Button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent selecting the person when clicking delete
+                          confirmDeletePerson(person);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -180,26 +227,26 @@ export const People = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="p-6">
               <div className="mb-6">
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500">Current Balance</p>
                   <p className={`text-3xl font-bold ${
-                    getPersonBalance(selectedPerson.id) > 0 ? 'text-green-600' : 
+                    getPersonBalance(selectedPerson.id) > 0 ? 'text-green-600' :
                     getPersonBalance(selectedPerson.id) < 0 ? 'text-red-600' : 'text-gray-600'
                   }`}>
                     {getPersonBalance(selectedPerson.id) > 0 ? '+' : ''}{currencySymbol}{Math.abs(getPersonBalance(selectedPerson.id)).toFixed(2)}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    {getPersonBalance(selectedPerson.id) > 0 ? 'They owe you' : 
+                    {getPersonBalance(selectedPerson.id) > 0 ? 'They owe you' :
                      getPersonBalance(selectedPerson.id) < 0 ? 'You owe them' : 'All settled'}
                   </p>
                 </div>
               </div>
 
               <div className="flex space-x-3 mb-6">
-                <Button 
+                <Button
                   onClick={() => setShowTransactionForm(true)}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                 >
@@ -258,32 +305,32 @@ export const People = () => {
             <form onSubmit={handleAddContact} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <Input 
+                <Input
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Enter name" 
+                  placeholder="Enter name"
                   required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone (Optional)</label>
-                <Input 
+                <Input
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  placeholder="Enter phone number" 
+                  placeholder="Enter phone number"
                 />
               </div>
               <div className="flex space-x-3 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   className="flex-1"
                   onClick={() => setShowAddForm(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Add Contact
@@ -302,18 +349,18 @@ export const People = () => {
             <form onSubmit={handleAddTransaction} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   step="0.01"
                   value={transactionData.amount}
                   onChange={(e) => setTransactionData({...transactionData, amount: e.target.value})}
-                  placeholder="Enter amount" 
+                  placeholder="Enter amount"
                   required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select 
+                <select
                   value={transactionData.type}
                   onChange={(e) => setTransactionData({...transactionData, type: e.target.value})}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -324,23 +371,23 @@ export const People = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <Input 
+                <Input
                   value={transactionData.description}
                   onChange={(e) => setTransactionData({...transactionData, description: e.target.value})}
-                  placeholder="Enter description" 
+                  placeholder="Enter description"
                 />
               </div>
               <div className="flex space-x-3 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   className="flex-1"
                   onClick={() => setShowTransactionForm(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Add Transaction
@@ -350,6 +397,24 @@ export const People = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete <strong>{personToDelete?.name}</strong> and all associated transactions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePerson} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
