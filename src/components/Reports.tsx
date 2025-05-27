@@ -91,13 +91,13 @@ export const Reports = () => {
       { 
         title: 'Total Given', 
         value: `${currencySymbol}${totalGiven.toFixed(0)}`, 
-        change: filteredTransactions.length > 0 ? '+12%' : '0%', 
+        change: filteredTransactions.length > 0 ? '' : '0%', 
         color: 'text-red-600' 
       },
       { 
         title: 'Total Received', 
         value: `${currencySymbol}${totalReceived.toFixed(0)}`, 
-        change: filteredTransactions.length > 0 ? '+8%' : '0%', 
+        change: filteredTransactions.length > 0 ? '' : '0%', 
         color: 'text-green-600' 
       },
       { 
