@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { Tables } from '@/integrations/supabase/types';
 
 export interface Contact {
   id: string;
@@ -67,7 +67,7 @@ export const useContacts = () => {
         .single();
 
       if (error) throw error;
-      
+
       setContacts(prev => [...prev, { ...data, balance: 0 }]);
       return data;
     } catch (error) {
@@ -76,10 +76,43 @@ export const useContacts = () => {
     }
   };
 
+  const deleteContact = async (contactId: string) => {
+    if (!user) return;
+
+    try {
+      // Delete associated transactions first (due to foreign key constraints)
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('contact_id', contactId)
+        .eq('user_id', user.id); // Ensure user owns the transaction
+
+      if (transactionError) throw transactionError;
+
+      // Then delete the contact
+      const { error: contactError } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('id', contactId)
+        .eq('user_id', user.id); // Ensure user owns the contact
+
+      if (contactError) throw contactError;
+
+      // Update state to remove the deleted contact
+      setContacts(prev => prev.filter(contact => contact.id !== contactId));
+
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      throw error;
+    }
+  };
+
+
   return {
     contacts,
     isLoading,
     addContact,
+    deleteContact, // Add deleteContact to the returned object
     refetch: fetchContacts
   };
 };
