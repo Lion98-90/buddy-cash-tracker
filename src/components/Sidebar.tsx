@@ -1,8 +1,7 @@
-
-import { 
-  Home, 
-  CreditCard, 
-  Users, 
+import {
+  Home,
+  CreditCard,
+  Users,
   BarChart3,
   Wallet,
   Settings,
@@ -45,12 +44,14 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
   return (
     <>
       {/* Mobile Menu Button */}
-      <button
-        onClick={toggleMobileMenu}
-        className="lg:hidden fixed top-4 left-4 z-[60] p-2 rounded-lg bg-white shadow-md"
-      >
-        <Menu className="w-6 h-6 text-gray-600" />
-      </button>
+      {!isMobileMenuOpen && (
+        <button
+          onClick={toggleMobileMenu}
+          className="lg:hidden fixed top-4 left-4 z-[60] p-2 rounded-lg bg-white shadow-md"
+        >
+          <Menu className="w-6 h-6 text-gray-600" />
+        </button>
+      )}
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
@@ -79,7 +80,7 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
               </div>
             </div>
           </div>
-          
+
           {/* Navigation Menu */}
           <nav className="flex-1 p-4">
             <ul className="space-y-2">
@@ -87,16 +88,16 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
                 const Icon = item.icon;
                 return (
                   <li key={item.id}>
-                   <button
-                   onClick={() => {
-                   setActiveTab(item.id);
-                   setIsMobileMenuOpen(false);
-                 }}
-                          className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-                                activeTab === item.id
-                ? 'bg-blue-50 dark:bg-gray-800 text-blue-600 dark:text-white border-r-2 border-blue-600 dark:border-blue-400'
-                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                   }`}
+                    <button
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+                        activeTab === item.id
+                          ? 'bg-blue-50 dark:bg-gray-800 text-blue-600 dark:text-white border-r-2 border-blue-600 dark:border-blue-400'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                      }`}
                     >
                       <Icon className="w-5 h-5" />
                       <span className="font-medium">{item.label}</span>
@@ -106,10 +107,10 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
               })}
             </ul>
           </nav>
-          
+
           {/* Logout Button */}
           <div className="p-4 border-t border-gray-200">
-            <button 
+            <button
               onClick={handleLogout}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
             >
