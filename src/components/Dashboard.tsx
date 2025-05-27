@@ -41,7 +41,7 @@ export const Dashboard = () => {
       {
         title: 'Total Expenses',
         value: `${currencySymbol}${totalGiven.toFixed(2)}`,
-        change: '+2.1%',
+        change: '',
         trend: 'up',
         icon: TrendingUp,
         color: 'text-red-600',
@@ -50,7 +50,7 @@ export const Dashboard = () => {
       {
         title: 'Money Received',
         value: `${currencySymbol}${totalReceived.toFixed(2)}`,
-        change: '-1.5%',
+        change: '',
         trend: 'down',
         icon: TrendingDown,
         color: 'text-green-600',
@@ -59,7 +59,7 @@ export const Dashboard = () => {
       {
         title: 'Active People',
         value: activeContacts.toString(),
-        change: `+${Math.max(0, activeContacts - 20)}`,
+        change: `${Math.max(0, activeContacts - 20)}`,
         trend: 'up',
         icon: Users,
         color: 'text-purple-600',
