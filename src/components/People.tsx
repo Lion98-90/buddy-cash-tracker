@@ -156,7 +156,7 @@ export const People = () => {
 
         {/* Person Details */}
         {selectedPerson ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
