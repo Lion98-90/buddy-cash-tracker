@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Plus, Search, Filter, Download, Eye } from 'lucide-react';
+import { Plus, Search, Download, Eye } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useTransactions } from '../hooks/useTransactions';
@@ -113,7 +112,7 @@ export const Transactions = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
           <p className="text-gray-600 mt-1">Manage all your money transactions</p>
@@ -165,17 +164,17 @@ export const Transactions = () => {
         <div className="divide-y divide-gray-200">
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((transaction) => (
-            <div
-             key={transaction.id}
-             className={`px-6 py-4 transition-colors cursor-pointer
-               ${selectedTransaction?.id === transaction.id
-                 ? 'bg-gray-100 dark:bg-gray-800'
-                 : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-               }`}
-             onClick={() => setSelectedTransaction(transaction)}
-                      >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
+              <div
+                key={transaction.id}
+                className={`px-6 py-4 transition-colors cursor-pointer ${
+                  selectedTransaction?.id === transaction.id
+                    ? 'bg-gray-100 dark:bg-gray-800'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+                onClick={() => setSelectedTransaction(transaction)}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-start space-x-4 flex-1">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-gray-600">
                         {(transaction.contact?.name || 'Unknown').split(' ').map(n => n[0]).join('')}
@@ -183,8 +182,8 @@ export const Transactions = () => {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{transaction.contact?.name || 'Unknown'}</p>
-                      <p className="text-sm text-gray-500">{transaction.description}</p>
-                      <div className="flex items-center space-x-2 text-xs text-gray-400">
+                      <p className="text-sm text-gray-500 break-words">{transaction.description}</p>
+                      <div className="flex items-center space-x-2 text-xs text-gray-400 flex-wrap">
                         <span>{new Date(transaction.date).toLocaleDateString()}</span>
                         {transaction.category && (
                           <>
@@ -195,7 +194,7 @@ export const Transactions = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex sm:flex-row flex-col sm:items-center items-end justify-between sm:justify-end space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                     <div className="text-right">
                       <span className={`text-lg font-semibold ${
                         transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
