@@ -239,7 +239,7 @@ export const People = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center h-96">
+          <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center h-96">
             <div className="text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-gray-400" />
@@ -297,7 +297,7 @@ export const People = () => {
       {/* Add Transaction Modal */}
       {showTransactionForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <div className="bg-gray-50 rounded-xl p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Transaction</h3>
             <form onSubmit={handleAddTransaction} className="space-y-4">
               <div>
