@@ -88,299 +88,99 @@ export const Settings = () => {
 
   const currencySymbol = getCurrencySymbol(formData.currency);
 
-  const handleExportData = async () => {
-    try {
-      const doc = new jsPDF('p', 'pt', 'a4');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const autoTable = (doc as any).autoTable;
-      
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 50;
-      let yPos = margin;
+  const generatePDFContent = () => {
+    const summaryStats = {
+      totalGiven: transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0),
+      totalReceived: transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0),
+      activeContacts: contacts.filter(c => c.balance !== 0).length
+    };
 
-      // Brand colors
-      const primaryColor = [59, 130, 246]; // blue-500
-      const secondaryColor = [99, 102, 241]; // indigo-500
-      const lightGray = [248, 250, 252]; // gray-50
-      const darkGray = [51, 65, 85]; // gray-800
+    const netBalance = summaryStats.totalReceived - summaryStats.totalGiven;
 
-      // Add logo
-      try {
-        const logoResponse = await fetch('/assets/logo.png');
-        if (logoResponse.ok) {
-          const logoBlob = await logoResponse.blob();
-          const logoDataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(logoBlob);
-          });
-          
-          doc.addImage(logoDataUrl, 'PNG', margin, yPos, 50, 50);
-          yPos += 70;
-        }
-      } catch (error) {
-        console.warn('Could not load logo, continuing without it');
-        yPos += 20;
-      }
+    const topOwedToYou = contacts
+      .filter(c => c.balance > 0)
+      .sort((a, b) => b.balance - a.balance)
+      .slice(0, 5);
 
-      // Header section
-      doc.setFillColor(...primaryColor);
-      doc.rect(margin, yPos, pageWidth - margin * 2, 80, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
-      doc.setFont('helvetica', 'bold');
-      doc.text('BUDDYCASH DATA EXPORT', pageWidth / 2, yPos + 35, { align: 'center' });
-      
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Generated on ${new Date().toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })}`, pageWidth / 2, yPos + 60, { align: 'center' });
-      
-      yPos += 100;
+    const topYouOwe = contacts
+      .filter(c => c.balance < 0)
+      .sort((a, b) => a.balance - b.balance)
+      .slice(0, 5);
 
-      // Profile Information Section
-      doc.setTextColor(...darkGray);
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PROFILE INFORMATION', margin, yPos);
-      yPos += 30;
+    return `
+BUDDYCASH FINANCIAL REPORT
+=========================
+Generated: ${new Date().toLocaleDateString()}
+Currency: ${formData.currency}
 
-      const profileData = [
-        ['Full Name', profile?.name || 'Not provided'],
-        ['Email Address', profile?.email || 'Not provided'],
-        ['Phone Number', profile?.phone || 'Not provided'],
-        ['Address', profile?.address || 'Not provided'],
-        ['Default Currency', profile?.currency || 'USD'],
-        ['Member Since', 'January 2024']
-      ];
+EXECUTIVE SUMMARY
+================
+Total Given:     ${currencySymbol}${summaryStats.totalGiven.toFixed(2)}
+Total Received:  ${currencySymbol}${summaryStats.totalReceived.toFixed(2)}
+Net Balance:     ${netBalance >= 0 ? currencySymbol : '-' + currencySymbol}${Math.abs(netBalance).toFixed(2)}
+Active Contacts: ${summaryStats.activeContacts}
 
-      autoTable({
-        body: profileData,
-        startY: yPos,
-        theme: 'plain',
-        styles: {
-          fontSize: 12,
-          cellPadding: 15,
-          lineColor: [229, 231, 235],
-          lineWidth: 1
-        },
-        columnStyles: {
-          0: { 
-            fontStyle: 'bold', 
-            cellWidth: 120,
-            fillColor: lightGray,
-            textColor: darkGray
-          },
-          1: { 
-            cellWidth: pageWidth - margin * 2 - 120,
-            textColor: [75, 85, 99]
-          }
-        },
-        margin: { left: margin, right: margin }
-      });
+OUTSTANDING BALANCES
+===================
 
-      yPos = autoTable.previous.finalY + 50;
+PEOPLE WHO OWE YOU:
+${topOwedToYou.length > 0 ? 
+  topOwedToYou.map((person, i) => 
+    `${i + 1}. ${person.name.padEnd(25)} ${currencySymbol}${person.balance.toFixed(2)}`
+  ).join('\n') : 
+  'No outstanding amounts owed to you'
+}
 
-      // Financial Summary Section
-      if (yPos > pageHeight - 200) {
-        doc.addPage();
-        yPos = margin;
-      }
+PEOPLE YOU OWE:
+${topYouOwe.length > 0 ? 
+  topYouOwe.map((person, i) => 
+    `${i + 1}. ${person.name.padEnd(25)} ${currencySymbol}${Math.abs(person.balance).toFixed(2)}`
+  ).join('\n') : 
+  'No outstanding amounts you owe'
+}
 
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...darkGray);
-      doc.text('FINANCIAL SUMMARY', margin, yPos);
-      yPos += 30;
+RECENT TRANSACTION HISTORY
+=========================
+${transactions.slice(0, 20).map((t, i) => {
+  const date = new Date(t.date).toLocaleDateString();
+  const type = t.type === 'given' ? 'GIVEN' : 'RECEIVED';
+  const amount = `${currencySymbol}${Math.abs(t.amount).toFixed(2)}`;
+  const description = (t.description || 'No description').substring(0, 30);
+  return `${(i + 1).toString().padStart(2)}. ${date} | ${type.padEnd(8)} | ${amount.padStart(10)} | ${description}`;
+}).join('\n')}
 
-      const summaryStats = {
-        totalGiven: transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0),
-        totalReceived: transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0),
-        activeContacts: contacts.filter(c => c.balance !== 0).length
-      };
+CONTACT SUMMARY
+==============
+Total Contacts: ${contacts.length}
+Contacts with Positive Balance: ${contacts.filter(c => c.balance > 0).length}
+Contacts with Negative Balance: ${contacts.filter(c => c.balance < 0).length}
+Contacts with Zero Balance: ${contacts.filter(c => c.balance === 0).length}
 
-      const netBalance = summaryStats.totalReceived - summaryStats.totalGiven;
+Report generated by BuddyCash Financial Management System
+=========================================================
+    `.trim();
+  };
 
-      const summaryData = [
-        ['Total Amount Given', `${currencySymbol}${summaryStats.totalGiven.toFixed(2)}`],
-        ['Total Amount Received', `${currencySymbol}${summaryStats.totalReceived.toFixed(2)}`],
-        ['Net Balance', `${netBalance >= 0 ? currencySymbol : '-' + currencySymbol}${Math.abs(netBalance).toFixed(2)}`],
-        ['Active Contacts', summaryStats.activeContacts.toString()],
-        ['Total Contacts', contacts.length.toString()],
-        ['Total Transactions', transactions.length.toString()]
-      ];
+  const handleExportData = () => {
+    const exportData = {
+      profile,
+      transactions,
+      contacts,
+      exportedAt: new Date().toISOString()
+    };
 
-      autoTable({
-        body: summaryData,
-        startY: yPos,
-        theme: 'striped',
-        styles: {
-          fontSize: 12,
-          cellPadding: 15
-        },
-        columnStyles: {
-          0: { 
-            fontStyle: 'bold', 
-            cellWidth: 150,
-            fillColor: [243, 244, 246],
-            textColor: darkGray
-          },
-          1: { 
-            cellWidth: pageWidth - margin * 2 - 150,
-            textColor: [75, 85, 99],
-            halign: 'right'
-          }
-        },
-        margin: { left: margin, right: margin }
-      });
-
-      yPos = autoTable.previous.finalY + 50;
-
-      // Contacts Section
-      if (contacts.length > 0) {
-        if (yPos > pageHeight - 200) {
-          doc.addPage();
-          yPos = margin;
-        }
-
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...darkGray);
-        doc.text('CONTACTS OVERVIEW', margin, yPos);
-        yPos += 30;
-
-        const contactsData = contacts.map((contact, index) => [
-          (index + 1).toString(),
-          contact.name,
-          contact.email || 'No email',
-          contact.phone || 'No phone',
-          `${currencySymbol}${Math.abs(contact.balance).toFixed(2)}`,
-          contact.balance >= 0 ? 'Owes You' : 'You Owe'
-        ]);
-
-        autoTable({
-          head: [['#', 'Name', 'Email', 'Phone', 'Amount', 'Status']],
-          body: contactsData,
-          startY: yPos,
-          theme: 'grid',
-          headStyles: {
-            fillColor: primaryColor,
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-            fontSize: 11,
-            cellPadding: 12
-          },
-          styles: {
-            fontSize: 10,
-            cellPadding: 10,
-            lineColor: [229, 231, 235]
-          },
-          columnStyles: {
-            0: { cellWidth: 30, halign: 'center' },
-            1: { cellWidth: 100 },
-            2: { cellWidth: 120 },
-            3: { cellWidth: 100 },
-            4: { cellWidth: 80, halign: 'right' },
-            5: { cellWidth: 80, halign: 'center' }
-          },
-          margin: { left: margin, right: margin },
-          alternateRowStyles: { fillColor: [249, 250, 251] }
-        });
-
-        yPos = autoTable.previous.finalY + 50;
-      }
-
-      // Recent Transactions Section
-      if (transactions.length > 0) {
-        if (yPos > pageHeight - 200) {
-          doc.addPage();
-          yPos = margin;
-        }
-
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...darkGray);
-        doc.text('RECENT TRANSACTIONS', margin, yPos);
-        yPos += 30;
-
-        const transactionsData = transactions.slice(0, 15).map((transaction, index) => [
-          (index + 1).toString(),
-          new Date(transaction.date).toLocaleDateString(),
-          transaction.type === 'given' ? 'Given' : 'Received',
-          `${currencySymbol}${Math.abs(transaction.amount).toFixed(2)}`,
-          transaction.contact || 'Unknown',
-          transaction.description || 'No description'
-        ]);
-
-        autoTable({
-          head: [['#', 'Date', 'Type', 'Amount', 'Contact', 'Description']],
-          body: transactionsData,
-          startY: yPos,
-          theme: 'grid',
-          headStyles: {
-            fillColor: primaryColor,
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-            fontSize: 11,
-            cellPadding: 12
-          },
-          styles: {
-            fontSize: 10,
-            cellPadding: 8,
-            lineColor: [229, 231, 235]
-          },
-          columnStyles: {
-            0: { cellWidth: 25, halign: 'center' },
-            1: { cellWidth: 70 },
-            2: { cellWidth: 60, halign: 'center' },
-            3: { cellWidth: 70, halign: 'right' },
-            4: { cellWidth: 80 },
-            5: { cellWidth: 'auto' }
-          },
-          margin: { left: margin, right: margin },
-          alternateRowStyles: { fillColor: [249, 250, 251] }
-        });
-      }
-
-      // Footer on all pages
-      const totalPages = doc.internal.getNumberOfPages();
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(107, 114, 128);
-
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        const footerY = pageHeight - 30;
-        doc.text('Generated by BuddyCash - Your Personal Finance Companion', margin, footerY);
-        doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
-        
-        // Add a subtle line above footer
-        doc.setDrawColor(229, 231, 235);
-        doc.line(margin, footerY - 15, pageWidth - margin, footerY - 15);
-      }
-
-      // Save the PDF
-      const dateStr = new Date().toISOString().split('T')[0];
-      doc.save(`buddycash-data-export-${dateStr}.pdf`);
-      
-      toast({
-        title: "Export Complete",
-        description: "Your data has been exported as a PDF successfully",
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        title: "Export Failed",
-        description: "There was an error generating your PDF export",
-        variant: "destructive",
-      });
-    }
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `buddycash-data-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Complete",
+      description: "Your data has been exported successfully",
+    });
   };
 
   const handleDownloadReport = () => {
@@ -567,79 +367,6 @@ export const Settings = () => {
       title: "Report Downloaded",
       description: "Your financial report has been downloaded as a PDF.",
     });
-  };
-
-  const generatePDFContent = () => {
-    const summaryStats = {
-      totalGiven: transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0),
-      totalReceived: transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0),
-      activeContacts: contacts.filter(c => c.balance !== 0).length
-    };
-
-    const netBalance = summaryStats.totalReceived - summaryStats.totalGiven;
-
-    const topOwedToYou = contacts
-      .filter(c => c.balance > 0)
-      .sort((a, b) => b.balance - a.balance)
-      .slice(0, 5);
-
-    const topYouOwe = contacts
-      .filter(c => c.balance < 0)
-      .sort((a, b) => a.balance - b.balance)
-      .slice(0, 5);
-
-    return `
-BUDDYCASH FINANCIAL REPORT
-=========================
-Generated: ${new Date().toLocaleDateString()}
-Currency: ${formData.currency}
-
-EXECUTIVE SUMMARY
-================
-Total Given:     ${currencySymbol}${summaryStats.totalGiven.toFixed(2)}
-Total Received:  ${currencySymbol}${summaryStats.totalReceived.toFixed(2)}
-Net Balance:     ${netBalance >= 0 ? currencySymbol : '-' + currencySymbol}${Math.abs(netBalance).toFixed(2)}
-Active Contacts: ${summaryStats.activeContacts}
-
-OUTSTANDING BALANCES
-===================
-
-PEOPLE WHO OWE YOU:
-${topOwedToYou.length > 0 ? 
-  topOwedToYou.map((person, i) => 
-    `${i + 1}. ${person.name.padEnd(25)} ${currencySymbol}${person.balance.toFixed(2)}`
-  ).join('\n') : 
-  'No outstanding amounts owed to you'
-}
-
-PEOPLE YOU OWE:
-${topYouOwe.length > 0 ? 
-  topYouOwe.map((person, i) => 
-    `${i + 1}. ${person.name.padEnd(25)} ${currencySymbol}${Math.abs(person.balance).toFixed(2)}`
-  ).join('\n') : 
-  'No outstanding amounts you owe'
-}
-
-RECENT TRANSACTION HISTORY
-=========================
-${transactions.slice(0, 20).map((t, i) => {
-  const date = new Date(t.date).toLocaleDateString();
-  const type = t.type === 'given' ? 'GIVEN' : 'RECEIVED';
-  const amount = `${currencySymbol}${Math.abs(t.amount).toFixed(2)}`;
-  const description = (t.description || 'No description').substring(0, 30);
-  return `${(i + 1).toString().padStart(2)}. ${date} | ${type.padEnd(8)} | ${amount.padStart(10)} | ${description}`;
-}).join('\n')}
-
-CONTACT SUMMARY
-==============
-Total Contacts: ${contacts.length}
-Contacts with Positive Balance: ${contacts.filter(c => c.balance > 0).length}
-Contacts with Negative Balance: ${contacts.filter(c => c.balance < 0).length}
-Contacts with Zero Balance: ${contacts.filter(c => c.balance === 0).length}
-
-Report generated by BuddyCash Financial Management System
-=========================================================
-    `.trim();
   };
 
   return (
@@ -853,3 +580,24 @@ Report generated by BuddyCash Financial Management System
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                onClick={handleDeleteAccount}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Account
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <PreferencesModal 
+        isOpen={showPreferences} 
+        onClose={() => setShowPreferences(false)} 
+      />
+    </div>
+  );
+};
