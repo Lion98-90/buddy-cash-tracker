@@ -1,15 +1,16 @@
-
 import { DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { ExpenseChart } from './ExpenseChart';
 import { useAuth } from '../hooks/useAuth';
 import { useTransactions } from '../hooks/useTransactions';
 import { useContacts } from '../hooks/useContacts';
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const Dashboard = () => {
   const { profile } = useAuth();
   const { transactions } = useTransactions();
   const { contacts } = useContacts();
+  const navigate = useNavigate();
   
   const getCurrencySymbol = (currencyCode: string) => {
     const symbols: { [key: string]: string } = {
@@ -77,6 +78,10 @@ export const Dashboard = () => {
     }));
   }, [transactions, currencySymbol]);
 
+  const handleProfileClick = () => {
+    navigate('/settings');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header - Fixed for mobile responsiveness */}
@@ -89,12 +94,13 @@ export const Dashboard = () => {
           <div className="flex -space-x-2">
             {profile?.avatar ? (
               <img 
-                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white" 
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white cursor-pointer" 
                 src={profile.avatar} 
                 alt="Profile" 
+                onClick={handleProfileClick}
               />
             ) : (
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center border-2 border-white">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center border-2 border-white cursor-pointer" onClick={handleProfileClick}>
                 <span className="text-xs font-bold text-white">
                   {profile?.name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </span>
