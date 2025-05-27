@@ -87,16 +87,16 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
                 const Icon = item.icon;
                 return (
                   <li key={item.id}>
-                    <button
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-                        activeTab === item.id
-                          ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
+                   <button
+                   onClick={() => {
+                   setActiveTab(item.id);
+                   setIsMobileMenuOpen(false);
+                 }}
+                          className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+                                activeTab === item.id
+                ? 'bg-blue-50 dark:bg-gray-800 text-blue-600 dark:text-white border-r-2 border-blue-600 dark:border-blue-400'
+                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                   }`}
                     >
                       <Icon className="w-5 h-5" />
                       <span className="font-medium">{item.label}</span>
