@@ -165,7 +165,15 @@ export const Transactions = () => {
         <div className="divide-y divide-gray-200">
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((transaction) => (
-              <div key={transaction.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+            <div
+             key={transaction.id}
+             className={`px-6 py-4 transition-colors cursor-pointer
+               ${selectedTransaction?.id === transaction.id
+                 ? 'bg-gray-100 dark:bg-gray-800'
+                 : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+               }`}
+             onClick={() => setSelectedTransaction(transaction)}
+                      >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
