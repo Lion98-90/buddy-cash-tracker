@@ -1,73 +1,64 @@
-# Welcome to your Lovable project
+<p align="center">
+  <img src="./assets/logo.png" alt="BuddyCash Logo" width="100" />
+</p>
 
-## Project info
+<h1 align="center">💸 BuddyCash - Expense Tracker</h1>
 
-**URL**: https://lovable.dev/projects/7eeb444a-6adb-4f00-8f05-0fb7dae9650f
+<p align="center">
+  <em>Track your shared and personal expenses with ease and style</em>
+</p>
 
-## How can I edit this code?
+<p align="center">
+  <a href="https://buddy-cash-tracker.vercel.app/dashboard">🌐 Live Demo</a> •
+  <a href="#features">Features</a> •
+  <a href="#screenshots">Screenshots</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#contributing">Contributing</a>
+</p>
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+![Version](https://img.shields.io/badge/version-1.0-blue)
+![Status](https://img.shields.io/badge/status-live-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![Built With](https://img.shields.io/badge/built%20with-React%20%2B%20Tailwind-blue)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7eeb444a-6adb-4f00-8f05-0fb7dae9650f) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## ✨ Features
 
-**Use your preferred IDE**
+- 📊 **Dashboard** — Overview of expenses, income, and category charts
+- 💸 **Transaction Logs** — Add money given/received with tags
+- 👥 **People Tracker** — Track transactions by user
+- 📁 **Export** — Download transaction records
+- 🌙 **Dark Mode** — Elegant, modern UI
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🖼️ Screenshots
 
-Follow these steps:
+### 📊 Dashboard
+![Dashboard Screenshot](./assets/dashboard.png)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 💰 Transactions
+![Transactions Screenshot](./assets/transactions.png)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## ⚙️ Tech Stack
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+| Layer        | Technology         |
+|--------------|--------------------|
+| Frontend     | React + TailwindCSS |
+| Backend/Auth | Firebase or Supabase |
+| Deployment   | Vercel             |
+
+---
+
+## 🚀 Getting Started
+
+```bash
+git clone https://github.com/your-username/buddycash.git
+cd buddycash
+npm install
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/7eeb444a-6adb-4f00-8f05-0fb7dae9650f) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
