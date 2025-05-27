@@ -79,7 +79,7 @@ export const Dashboard = () => {
   }, [transactions, currencySymbol]);
 
   const handleProfileClick = () => {
-    navigate('/settings');
+    navigate('/settings#edit-profile');
   };
 
   return (
