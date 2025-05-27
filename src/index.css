@@ -73,11 +73,18 @@
   color-scheme: dark;
 }
 
+/* Adjust background colors for dark mode on specific elements */
 .dark .bg-white,
 .dark .bg-gray-50,
 .dark .bg-gray-100 {
-  background-color: #0d1117;
+  background-color: #1a1f26; /* Use a slightly lighter dark grey */
 }
+
+/* Ensure selected item background is also dark */
+.dark .bg-blue-50 {
+  background-color: #21262d; /* Use a distinct dark grey for selected item */
+}
+
 
 .dark .border,
 .dark .border-gray-100,
