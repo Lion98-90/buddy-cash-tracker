@@ -38,10 +38,10 @@
 ## 🖼️ Screenshots
 
 ### 📊 Dashboard
-![Dashboard Screenshot](./assets/dashboard.png)
+![Dashboard Screenshot](./assets/Dashboard.png)
 
 ### 💰 Transactions
-![Transactions Screenshot](./assets/transactions.png)
+![Transactions Screenshot](./assets/Transactions.png)
 
 ---
 
