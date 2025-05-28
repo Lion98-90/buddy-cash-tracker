@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable'; // Changed import
 import { Camera, Edit, Shield, CreditCard, Globe, LogOut, Settings as SettingsIcon, Download, FileText, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -12,9 +12,8 @@ import { useContacts } from '../hooks/useContacts';
 import { PreferencesModal } from './PreferencesModal';
 import { useToast } from '../hooks/use-toast';
 
-// Extend jsPDF with autoTable
-interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => jsPDFWithAutoTable;
+// Interface for jsPDF instance when extended by autoTable (for lastAutoTable property)
+interface jsPDFWithAutoTableData extends jsPDF {
   lastAutoTable: { finalY?: number };
 }
 
@@ -54,7 +53,7 @@ export const Settings = () => {
         if (!response.ok) {
           console.warn('Logo image not found at /assets/logo.png. Report will not include logo.');
           toast({ title: "Logo Missing", description: "App logo not found. Report will be generated without it.", variant: "default" });
-          setLogoDataUrl(null); // Explicitly set to null
+          setLogoDataUrl(null); 
           return;
         }
         const blob = await response.blob();
@@ -77,7 +76,7 @@ export const Settings = () => {
     };
     fetchLogo();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Removed toast from dependencies, as toast function is stable
+  }, []); 
 
 
   const handleSave = async () => {
@@ -168,13 +167,13 @@ export const Settings = () => {
         orientation: 'p',
         unit: 'pt',
         format: 'a4'
-      }) as jsPDFWithAutoTable;
+      }) as jsPDFWithAutoTableData; // Cast to interface that includes lastAutoTable
       console.log('[handleDownloadReport] jsPDF instance created.');
 
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 40;
-      let yPos = margin; // Initialize yPos
+      let yPos = margin; 
 
       const FONT_REGULAR = 'Helvetica';
       const FONT_BOLD = 'Helvetica-Bold';
@@ -214,8 +213,7 @@ export const Settings = () => {
         doc.text('Financial Report', pageWidth - margin, headerY + 10, { align: 'right' });
         doc.text(new Date().toLocaleDateString(), pageWidth - margin, headerY + 25, { align: 'right' });
         
-        // Set yPos based on whether logo was attempted/drawn or not
-        const logoHeightEstimate = logoDataUrl ? 40 : 20; // Rough height occupied by logo or title
+        const logoHeightEstimate = logoDataUrl ? 40 : 20; 
         yPos = headerY + logoHeightEstimate + 30; 
         
         doc.setDrawColor(COLOR_BORDER);
@@ -245,9 +243,8 @@ export const Settings = () => {
         if (yPos + neededHeight > pageHeight - margin) {
           console.log('[PDF] Adding new page. Current yPos:', yPos, 'Needed:', neededHeight);
           doc.addPage();
-          yPos = margin; // Reset yPos for new page
-          addReportHeader(); // Add header to new page
-          // Footer will be drawn globally at the end, or by autoTable's didDrawPage
+          yPos = margin; 
+          addReportHeader(); 
         }
       };
 
@@ -278,7 +275,6 @@ export const Settings = () => {
         yPos += 20;
       };
 
-      // --- Report Content ---
       addReportHeader();
 
       addSectionTitle('Profile Information');
@@ -322,7 +318,7 @@ export const Settings = () => {
       const updateYPosAfterTable = () => {
         yPos = (doc.lastAutoTable && typeof doc.lastAutoTable.finalY === 'number') 
                ? doc.lastAutoTable.finalY + 20 
-               : yPos + 20; // Fallback if finalY is not available or table was empty
+               : yPos + 20; 
         console.log(`[PDF] yPos updated after table. New yPos: ${yPos}`);
       };
       
@@ -331,7 +327,7 @@ export const Settings = () => {
         addPageIfNeeded(20 + topOwedToYou.length * 20);
         doc.setFont(FONT_BOLD); doc.setFontSize(11); doc.setTextColor(COLOR_TEXT_DARK);
         doc.text('People Who Owe You:', margin, yPos); yPos += 20;
-        doc.autoTable({
+        autoTable(doc, { // Changed call
           head: [['Name', 'Amount']], body: topOwedToYou, startY: yPos,
           theme: 'striped', headStyles: { fillColor: COLOR_PRIMARY, textColor: '#FFFFFF', fontStyle: 'bold' },
           styles: { font: FONT_REGULAR, fontSize: 9, cellPadding: 5 },
@@ -348,7 +344,7 @@ export const Settings = () => {
         addPageIfNeeded(20 + topYouOwe.length * 20);
         doc.setFont(FONT_BOLD); doc.setFontSize(11); doc.setTextColor(COLOR_TEXT_DARK);
         doc.text('People You Owe:', margin, yPos); yPos += 20;
-        doc.autoTable({
+        autoTable(doc, { // Changed call
           head: [['Name', 'Amount']], body: topYouOwe, startY: yPos,
           theme: 'striped', headStyles: { fillColor: [220, 38, 38], textColor: '#FFFFFF', fontStyle: 'bold' },
           styles: { font: FONT_REGULAR, fontSize: 9, cellPadding: 5 },
@@ -372,7 +368,7 @@ export const Settings = () => {
       if (recentTransactionsData.length > 0) {
         console.log('[PDF] Drawing "Recent Transactions" table.');
         addPageIfNeeded(20 + recentTransactionsData.length * 20);
-        doc.autoTable({
+        autoTable(doc, { // Changed call
           head: [['Date', 'Type', 'Amount', 'Contact', 'Description']], body: recentTransactionsData, startY: yPos,
           theme: 'grid', headStyles: { fillColor: COLOR_TEXT_DARK, textColor: '#FFFFFF', fontStyle: 'bold' },
           styles: { font: FONT_REGULAR, fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
