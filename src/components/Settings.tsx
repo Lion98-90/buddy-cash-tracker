@@ -175,8 +175,8 @@ export const Settings = () => {
       const margin = 40;
       let yPos = margin; 
 
-      const FONT_REGULAR = 'courier';
-      const FONT_BOLD = 'courier';
+      const FONT_REGULAR = 'Helvetica';
+      const FONT_BOLD = 'Helvetica-Bold';
       const COLOR_PRIMARY = '#2563EB';
       const COLOR_TEXT_DARK = '#1F2937';
       const COLOR_TEXT_LIGHT = '#6B7280';
