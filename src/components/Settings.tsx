@@ -197,7 +197,7 @@ export const Settings = () => {
             doc.setFont(FONT_BOLD);
             doc.setFontSize(16);
             doc.setTextColor(COLOR_PRIMARY);
-            doc.text('BuddyCash (Logo Error)', margin, headerY + 12);
+            doc.text('BuddyCash ', margin, headerY + 12);
           }
         } else {
           console.log('[PDF] No logo data URL, using text title.');
