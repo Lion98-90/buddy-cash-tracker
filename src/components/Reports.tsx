@@ -546,7 +546,7 @@ For support, contact: support@buddycash.com
          </Button>
        </div>
      </div>
-```
+
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
