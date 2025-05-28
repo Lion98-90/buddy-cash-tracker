@@ -48,26 +48,36 @@ export const Settings = () => {
 
   useEffect(() => {
     const fetchLogo = async () => {
+      console.log('[Settings] Attempting to fetch logo...');
       try {
         const response = await fetch('/assets/logo.png');
         if (!response.ok) {
           console.warn('Logo image not found at /assets/logo.png. Report will not include logo.');
           toast({ title: "Logo Missing", description: "App logo not found. Report will be generated without it.", variant: "default" });
+          setLogoDataUrl(null); // Explicitly set to null
           return;
         }
         const blob = await response.blob();
         const reader = new FileReader();
         reader.onloadend = () => {
           setLogoDataUrl(reader.result as string);
+          console.log('[Settings] Logo fetched and data URL set.');
         };
+        reader.onerror = () => {
+          console.error('Error reading logo blob.');
+          toast({ title: "Logo Error", description: "Could not read app logo data.", variant: "destructive" });
+          setLogoDataUrl(null);
+        }
         reader.readAsDataURL(blob);
       } catch (error) {
         console.error('Error loading logo:', error);
-        toast({ title: "Logo Error", description: "Could not load app logo for the report.", variant: "default" });
+        toast({ title: "Logo Error", description: "Could not load app logo for the report.", variant: "destructive" });
+        setLogoDataUrl(null);
       }
     };
     fetchLogo();
-  }, [toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Removed toast from dependencies, as toast function is stable
 
 
   const handleSave = async () => {
@@ -105,13 +115,11 @@ export const Settings = () => {
   const handleDeleteAccount = async () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       try {
-        // Note: Actual user data deletion from Supabase should be handled server-side or via a Supabase function
-        // For now, this just signs out and simulates deletion.
         await signOut(); 
         window.location.href = '/';
         toast({
           title: "Account Deleted",
-          description: "Your account has been signed out. For full data deletion, contact support.", // Placeholder message
+          description: "Your account has been signed out. For full data deletion, contact support.",
         });
       } catch (error) {
         console.error('Error deleting account:', error);
@@ -154,247 +162,256 @@ export const Settings = () => {
   };
 
   const handleDownloadReport = async () => {
-    const doc = new jsPDF({
-      orientation: 'p',
-      unit: 'pt',
-      format: 'a4'
-    }) as jsPDFWithAutoTable;
+    console.log('[handleDownloadReport] Starting PDF generation...');
+    try {
+      const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'pt',
+        format: 'a4'
+      }) as jsPDFWithAutoTable;
+      console.log('[handleDownloadReport] jsPDF instance created.');
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 40;
-    let yPos = margin;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 40;
+      let yPos = margin; // Initialize yPos
 
-    // --- Styles ---
-    const FONT_REGULAR = 'Helvetica';
-    const FONT_BOLD = 'Helvetica-Bold';
-    
-    const COLOR_PRIMARY = '#2563EB'; // Tailwind blue-600
-    const COLOR_TEXT_DARK = '#1F2937'; // Tailwind gray-800
-    const COLOR_TEXT_LIGHT = '#6B7280'; // Tailwind gray-500
-    const COLOR_BORDER = '#E5E7EB';   // Tailwind gray-200
+      const FONT_REGULAR = 'Helvetica';
+      const FONT_BOLD = 'Helvetica-Bold';
+      const COLOR_PRIMARY = '#2563EB';
+      const COLOR_TEXT_DARK = '#1F2937';
+      const COLOR_TEXT_LIGHT = '#6B7280';
+      const COLOR_BORDER = '#E5E7EB';
 
-    // --- Helper Functions ---
-    const addPageIfNeeded = (neededHeight: number) => {
-      if (yPos + neededHeight > pageHeight - margin) {
-        doc.addPage();
-        yPos = margin;
-        addReportHeader(); // Add header to new page
-        addReportFooter(); // Add footer to new page (will be drawn on current page, then overwritten by content)
-      }
-    };
-    
-    const addReportHeader = () => {
-      const headerY = margin / 2;
-      if (logoDataUrl) {
-        try {
-          const imgProps = doc.getImageProperties(logoDataUrl);
-          const imgWidth = 40;
-          const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-          doc.addImage(logoDataUrl, 'PNG', margin, headerY, imgWidth, imgHeight);
-        } catch (e) {
-          console.error("Error adding logo to PDF:", e);
-          doc.setFont(FONT_REGULAR);
-          doc.setFontSize(10);
-          doc.setTextColor(COLOR_TEXT_LIGHT);
-          doc.text('BuddyCash', margin, headerY + 10);
+      const addReportHeader = () => {
+        console.log('[PDF] Adding report header. Current yPos:', yPos, 'Logo URL available:', !!logoDataUrl);
+        const headerY = margin / 2;
+        if (logoDataUrl) {
+          try {
+            const imgProps = doc.getImageProperties(logoDataUrl);
+            const imgWidth = 40;
+            const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+            doc.addImage(logoDataUrl, 'PNG', margin, headerY, imgWidth, imgHeight);
+            console.log('[PDF] Logo added to header.');
+          } catch (e) {
+            console.error("Error adding logo to PDF header:", e);
+            doc.setFont(FONT_BOLD);
+            doc.setFontSize(16);
+            doc.setTextColor(COLOR_PRIMARY);
+            doc.text('BuddyCash (Logo Error)', margin, headerY + 12);
+          }
+        } else {
+          console.log('[PDF] No logo data URL, using text title.');
+          doc.setFont(FONT_BOLD);
+          doc.setFontSize(16);
+          doc.setTextColor(COLOR_PRIMARY);
+          doc.text('BuddyCash', margin, headerY + 12);
         }
-      } else {
+
+        doc.setFont(FONT_REGULAR);
+        doc.setFontSize(10);
+        doc.setTextColor(COLOR_TEXT_LIGHT);
+        doc.text('Financial Report', pageWidth - margin, headerY + 10, { align: 'right' });
+        doc.text(new Date().toLocaleDateString(), pageWidth - margin, headerY + 25, { align: 'right' });
+        
+        // Set yPos based on whether logo was attempted/drawn or not
+        const logoHeightEstimate = logoDataUrl ? 40 : 20; // Rough height occupied by logo or title
+        yPos = headerY + logoHeightEstimate + 30; 
+        
+        doc.setDrawColor(COLOR_BORDER);
+        doc.line(margin, yPos - 15, pageWidth - margin, yPos - 15);
+        console.log('[PDF] Report header finished. New yPos:', yPos);
+      };
+
+      const addReportFooter = () => {
+        console.log('[PDF] Adding report footer.');
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFont(FONT_REGULAR);
+        doc.setFontSize(8);
+        doc.setTextColor(COLOR_TEXT_LIGHT);
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.text(
+            `Page ${i} of ${pageCount} | Generated by BuddyCash`,
+            pageWidth / 2,
+            pageHeight - margin / 2,
+            { align: 'center' }
+          );
+        }
+        console.log('[PDF] Report footer finished.');
+      };
+      
+      const addPageIfNeeded = (neededHeight: number) => {
+        if (yPos + neededHeight > pageHeight - margin) {
+          console.log('[PDF] Adding new page. Current yPos:', yPos, 'Needed:', neededHeight);
+          doc.addPage();
+          yPos = margin; // Reset yPos for new page
+          addReportHeader(); // Add header to new page
+          // Footer will be drawn globally at the end, or by autoTable's didDrawPage
+        }
+      };
+
+      const addSectionTitle = (title: string) => {
+        console.log(`[PDF] Adding section title: ${title}. Current yPos: ${yPos}`);
+        addPageIfNeeded(40);
         doc.setFont(FONT_BOLD);
-        doc.setFontSize(16);
+        doc.setFontSize(14);
         doc.setTextColor(COLOR_PRIMARY);
-        doc.text('BuddyCash', margin, headerY + 12);
-      }
-
-      doc.setFont(FONT_REGULAR);
-      doc.setFontSize(10);
-      doc.setTextColor(COLOR_TEXT_LIGHT);
-      doc.text('Financial Report', pageWidth - margin, headerY + 10, { align: 'right' });
-      doc.text(new Date().toLocaleDateString(), pageWidth - margin, headerY + 25, { align: 'right' });
+        doc.text(title, margin, yPos);
+        yPos += 25;
+        doc.setDrawColor(COLOR_BORDER);
+        doc.line(margin, yPos -10, margin + 100, yPos - 10);
+        yPos += 5;
+        console.log(`[PDF] Section title added. New yPos: ${yPos}`);
+      };
       
-      yPos = headerY + (logoDataUrl ? 40 : 20) + 30; // Initial yPos after header
+      const addKeyValuePair = (key: string, value: string) => {
+        console.log(`[PDF] Adding K/V: ${key} ${value}. Current yPos: ${yPos}`);
+        addPageIfNeeded(20);
+        doc.setFont(FONT_BOLD);
+        doc.setFontSize(10);
+        doc.setTextColor(COLOR_TEXT_DARK);
+        doc.text(key, margin, yPos);
+        doc.setFont(FONT_REGULAR);
+        doc.setTextColor(COLOR_TEXT_LIGHT);
+        doc.text(value, margin + 120, yPos);
+        yPos += 20;
+      };
+
+      // --- Report Content ---
+      addReportHeader();
+
+      addSectionTitle('Profile Information');
+      addKeyValuePair('Name:', profile?.name || 'N/A');
+      addKeyValuePair('Email:', profile?.email || 'N/A');
+      if (profile?.phone) addKeyValuePair('Phone:', profile.phone);
+      yPos += 10;
+
+      const currencySymbol = getCurrencySymbol(formData.currency);
+      const summaryStats = {
+        totalGiven: (transactions || []).filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0),
+        totalReceived: (transactions || []).filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0),
+        activeContacts: (contacts || []).filter(c => c.balance !== 0).length
+      };
+      const netBalance = summaryStats.totalReceived - summaryStats.totalGiven;
+
+      addSectionTitle('Financial Overview');
+      addKeyValuePair('Default Currency:', formData.currency);
+      addKeyValuePair('Total Given:', `${currencySymbol}${summaryStats.totalGiven.toFixed(2)}`);
+      addKeyValuePair('Total Received:', `${currencySymbol}${summaryStats.totalReceived.toFixed(2)}`);
+      addKeyValuePair('Net Balance:', `${netBalance >= 0 ? '' : '-'}${currencySymbol}${Math.abs(netBalance).toFixed(2)}`);
+      yPos += 10;
+
+      addSectionTitle('Outstanding Balances');
+      const topOwedToYou = (contacts || [])
+        .filter(c => c.balance && c.balance > 0)
+        .sort((a, b) => (b.balance || 0) - (a.balance || 0))
+        .map(c => [c.name, `${currencySymbol}${(c.balance || 0).toFixed(2)}`]);
+
+      const topYouOwe = (contacts || [])
+        .filter(c => c.balance && c.balance < 0)
+        .sort((a, b) => (a.balance || 0) - (b.balance || 0))
+        .map(c => [c.name, `${currencySymbol}${Math.abs(c.balance || 0).toFixed(2)}`]);
+
+      const autoTableDidDrawPage = (data: any) => {
+        console.log('[PDF] autoTable.didDrawPage triggered. Resetting yPos and adding header.');
+        yPos = margin; 
+        addReportHeader();
+      };
+
+      const updateYPosAfterTable = () => {
+        yPos = (doc.lastAutoTable && typeof doc.lastAutoTable.finalY === 'number') 
+               ? doc.lastAutoTable.finalY + 20 
+               : yPos + 20; // Fallback if finalY is not available or table was empty
+        console.log(`[PDF] yPos updated after table. New yPos: ${yPos}`);
+      };
       
-      // Draw a line below header
-      doc.setDrawColor(COLOR_BORDER);
-      doc.line(margin, yPos - 15, pageWidth - margin, yPos - 15);
-    };
-
-    const addReportFooter = () => {
-      const pageCount = doc.internal.getNumberOfPages();
-      doc.setFont(FONT_REGULAR);
-      doc.setFontSize(8);
-      doc.setTextColor(COLOR_TEXT_LIGHT);
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.text(
-          `Page ${i} of ${pageCount} | Generated by BuddyCash`,
-          pageWidth / 2,
-          pageHeight - margin / 2,
-          { align: 'center' }
-        );
+      if (topOwedToYou.length > 0) {
+        console.log('[PDF] Drawing "People Who Owe You" table.');
+        addPageIfNeeded(20 + topOwedToYou.length * 20);
+        doc.setFont(FONT_BOLD); doc.setFontSize(11); doc.setTextColor(COLOR_TEXT_DARK);
+        doc.text('People Who Owe You:', margin, yPos); yPos += 20;
+        doc.autoTable({
+          head: [['Name', 'Amount']], body: topOwedToYou, startY: yPos,
+          theme: 'striped', headStyles: { fillColor: COLOR_PRIMARY, textColor: '#FFFFFF', fontStyle: 'bold' },
+          styles: { font: FONT_REGULAR, fontSize: 9, cellPadding: 5 },
+          margin: { left: margin, right: margin }, didDrawPage: autoTableDidDrawPage
+        });
+        updateYPosAfterTable();
+      } else {
+        addKeyValuePair('People Who Owe You:', 'None');
       }
-    };
+      yPos += 10;
 
-    const addSectionTitle = (title: string) => {
-      addPageIfNeeded(40);
-      doc.setFont(FONT_BOLD);
-      doc.setFontSize(14);
-      doc.setTextColor(COLOR_PRIMARY);
-      doc.text(title, margin, yPos);
-      yPos += 25;
-      doc.setDrawColor(COLOR_BORDER);
-      doc.line(margin, yPos -10, margin + 100, yPos - 10); // Accent line
-      yPos += 5;
-    };
+      if (topYouOwe.length > 0) {
+        console.log('[PDF] Drawing "People You Owe" table.');
+        addPageIfNeeded(20 + topYouOwe.length * 20);
+        doc.setFont(FONT_BOLD); doc.setFontSize(11); doc.setTextColor(COLOR_TEXT_DARK);
+        doc.text('People You Owe:', margin, yPos); yPos += 20;
+        doc.autoTable({
+          head: [['Name', 'Amount']], body: topYouOwe, startY: yPos,
+          theme: 'striped', headStyles: { fillColor: [220, 38, 38], textColor: '#FFFFFF', fontStyle: 'bold' },
+          styles: { font: FONT_REGULAR, fontSize: 9, cellPadding: 5 },
+          margin: { left: margin, right: margin }, didDrawPage: autoTableDidDrawPage
+        });
+        updateYPosAfterTable();
+      } else {
+        addKeyValuePair('People You Owe:', 'None');
+      }
+      yPos += 10;
+
+      addSectionTitle('Recent Transactions (Last 20)');
+      const recentTransactionsData = (transactions || []).slice(0, 20).map(t => [
+        new Date(t.date).toLocaleDateString(),
+        t.type === 'given' ? 'Given' : 'Received',
+        `${t.amount < 0 ? '-' : ''}${currencySymbol}${Math.abs(t.amount).toFixed(2)}`,
+        t.contact?.name || '-',
+        t.description?.substring(0,40) || '-'
+      ]);
+
+      if (recentTransactionsData.length > 0) {
+        console.log('[PDF] Drawing "Recent Transactions" table.');
+        addPageIfNeeded(20 + recentTransactionsData.length * 20);
+        doc.autoTable({
+          head: [['Date', 'Type', 'Amount', 'Contact', 'Description']], body: recentTransactionsData, startY: yPos,
+          theme: 'grid', headStyles: { fillColor: COLOR_TEXT_DARK, textColor: '#FFFFFF', fontStyle: 'bold' },
+          styles: { font: FONT_REGULAR, fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
+          columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 50 }, 2: { cellWidth: 70, halign: 'right' }, 3: { cellWidth: 80 }, 4: { cellWidth: 'auto' }},
+          margin: { left: margin, right: margin }, didDrawPage: autoTableDidDrawPage
+        });
+        updateYPosAfterTable();
+      } else {
+        addKeyValuePair('Recent Transactions:', 'No transactions found.');
+      }
+      yPos += 10;
+
+      addSectionTitle('Contact Summary');
+      addKeyValuePair('Total Contacts:', (contacts || []).length.toString());
+      addKeyValuePair('Contacts Who Owe You:', (contacts || []).filter(c => c.balance && c.balance > 0).length.toString());
+      addKeyValuePair('Contacts You Owe:', (contacts || []).filter(c => c.balance && c.balance < 0).length.toString());
+      addKeyValuePair('Contacts with Zero Balance:', (contacts || []).filter(c => c.balance === 0).length.toString());
+
+      console.log('[handleDownloadReport] PDF content generation complete. Final yPos:', yPos);
+      addReportFooter();
+      
+      const dateStr = new Date().toISOString().split('T')[0];
+      console.log('[handleDownloadReport] Attempting to save PDF...');
+      doc.save(`buddycash-financial-report-${dateStr}.pdf`);
+      console.log('[handleDownloadReport] PDF save command issued.');
     
-    const addKeyValuePair = (key: string, value: string) => {
-      addPageIfNeeded(20);
-      doc.setFont(FONT_BOLD);
-      doc.setFontSize(10);
-      doc.setTextColor(COLOR_TEXT_DARK);
-      doc.text(key, margin, yPos);
-      doc.setFont(FONT_REGULAR);
-      doc.setTextColor(COLOR_TEXT_LIGHT);
-      doc.text(value, margin + 120, yPos); // Adjust alignment as needed
-      yPos += 20;
-    };
-
-    // --- Report Content ---
-    addReportHeader();
-
-    // Profile Information
-    addSectionTitle('Profile Information');
-    addKeyValuePair('Name:', profile?.name || 'N/A');
-    addKeyValuePair('Email:', profile?.email || 'N/A');
-    if (profile?.phone) addKeyValuePair('Phone:', profile.phone);
-    yPos += 10; // Extra space after section
-
-    // Financial Summary
-    const currencySymbol = getCurrencySymbol(formData.currency);
-    const summaryStats = {
-      totalGiven: transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0),
-      totalReceived: transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0),
-      activeContacts: contacts.filter(c => c.balance !== 0).length
-    };
-    const netBalance = summaryStats.totalReceived - summaryStats.totalGiven;
-
-    addSectionTitle('Financial Overview');
-    addKeyValuePair('Default Currency:', formData.currency);
-    addKeyValuePair('Total Given:', `${currencySymbol}${summaryStats.totalGiven.toFixed(2)}`);
-    addKeyValuePair('Total Received:', `${currencySymbol}${summaryStats.totalReceived.toFixed(2)}`);
-    addKeyValuePair('Net Balance:', `${netBalance >= 0 ? '' : '-'}${currencySymbol}${Math.abs(netBalance).toFixed(2)}`);
-    yPos += 10;
-
-    // Outstanding Balances
-    addSectionTitle('Outstanding Balances');
-    const topOwedToYou = contacts
-      .filter(c => c.balance > 0)
-      .sort((a, b) => b.balance - a.balance)
-      .map(c => [c.name, `${currencySymbol}${c.balance.toFixed(2)}`]);
-
-    const topYouOwe = contacts
-      .filter(c => c.balance < 0)
-      .sort((a, b) => a.balance - b.balance)
-      .map(c => [c.name, `${currencySymbol}${Math.abs(c.balance).toFixed(2)}`]);
-
-    if (topOwedToYou.length > 0) {
-      addPageIfNeeded(20 + topOwedToYou.length * 20); // Estimate height
-      doc.setFont(FONT_BOLD);
-      doc.setFontSize(11);
-      doc.setTextColor(COLOR_TEXT_DARK);
-      doc.text('People Who Owe You:', margin, yPos);
-      yPos += 20;
-      doc.autoTable({
-        head: [['Name', 'Amount']],
-        body: topOwedToYou,
-        startY: yPos,
-        theme: 'striped',
-        headStyles: { fillColor: [37, 99, 235], textColor: '#FFFFFF', fontStyle: 'bold' }, // blue-600
-        styles: { font: FONT_REGULAR, fontSize: 9, cellPadding: 5 },
-        margin: { left: margin, right: margin },
-        didDrawPage: (data) => { yPos = margin; addReportHeader(); } // Reset yPos for new page
+      toast({
+        title: "Report Downloaded",
+        description: "Your financial report has been downloaded as a PDF.",
       });
-      yPos = doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY + 20 : yPos + 20;
-    } else {
-      addKeyValuePair('People Who Owe You:', 'None');
-    }
-    
-    yPos += 10;
 
-    if (topYouOwe.length > 0) {
-      addPageIfNeeded(20 + topYouOwe.length * 20);
-      doc.setFont(FONT_BOLD);
-      doc.setFontSize(11);
-      doc.setTextColor(COLOR_TEXT_DARK);
-      doc.text('People You Owe:', margin, yPos);
-      yPos += 20;
-      doc.autoTable({
-        head: [['Name', 'Amount']],
-        body: topYouOwe,
-        startY: yPos,
-        theme: 'striped',
-        headStyles: { fillColor: [220, 38, 38], textColor: '#FFFFFF', fontStyle: 'bold' }, // red-600
-        styles: { font: FONT_REGULAR, fontSize: 9, cellPadding: 5 },
-        margin: { left: margin, right: margin },
-        didDrawPage: (data) => { yPos = margin; addReportHeader(); }
+    } catch (error: any) {
+      console.error('Error generating PDF report:', error);
+      toast({
+        title: "PDF Generation Error",
+        description: `Failed to generate PDF report. ${error.message || String(error)}`,
+        variant: "destructive",
       });
-      yPos = doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY + 20 : yPos + 20;
-    } else {
-      addKeyValuePair('People You Owe:', 'None');
     }
-    yPos += 10;
-
-    // Recent Transactions
-    addSectionTitle('Recent Transactions (Last 20)');
-    const recentTransactionsData = transactions.slice(0, 20).map(t => [
-      new Date(t.date).toLocaleDateString(),
-      t.type === 'given' ? 'Given' : 'Received',
-      `${t.amount < 0 ? '-' : ''}${currencySymbol}${Math.abs(t.amount).toFixed(2)}`,
-      t.contact?.name || '-',
-      t.description?.substring(0,40) || '-'
-    ]);
-
-    if (recentTransactionsData.length > 0) {
-      addPageIfNeeded(20 + recentTransactionsData.length * 20);
-      doc.autoTable({
-        head: [['Date', 'Type', 'Amount', 'Contact', 'Description']],
-        body: recentTransactionsData,
-        startY: yPos,
-        theme: 'grid',
-        headStyles: { fillColor: COLOR_TEXT_DARK, textColor: '#FFFFFF', fontStyle: 'bold' },
-        styles: { font: FONT_REGULAR, fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
-        columnStyles: {
-          0: { cellWidth: 60 }, // Date
-          1: { cellWidth: 50 }, // Type
-          2: { cellWidth: 70, halign: 'right' }, // Amount
-          3: { cellWidth: 80 }, // Contact
-          4: { cellWidth: 'auto' } // Description
-        },
-        margin: { left: margin, right: margin },
-        didDrawPage: (data) => { yPos = margin; addReportHeader(); }
-      });
-      yPos = doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY + 20 : yPos + 20;
-    } else {
-      addKeyValuePair('Recent Transactions:', 'No transactions found.');
-    }
-    yPos += 10;
-
-    // Contact Summary
-    addSectionTitle('Contact Summary');
-    addKeyValuePair('Total Contacts:', contacts.length.toString());
-    addKeyValuePair('Contacts Who Owe You:', contacts.filter(c => c.balance > 0).length.toString());
-    addKeyValuePair('Contacts You Owe:', contacts.filter(c => c.balance < 0).length.toString());
-    addKeyValuePair('Contacts with Zero Balance:', contacts.filter(c => c.balance === 0).length.toString());
-
-    // --- Finalize PDF ---
-    addReportFooter(); // Call footer once all content is added to ensure it's on all pages
-    const dateStr = new Date().toISOString().split('T')[0];
-    doc.save(`buddycash-financial-report-${dateStr}.pdf`);
-    
-    toast({
-      title: "Report Downloaded",
-      description: "Your financial report has been downloaded as a PDF.",
-    });
   };
 
 
@@ -517,7 +534,6 @@ export const Settings = () => {
                   value={formData.currency} 
                   onValueChange={(value) => {
                     setFormData({...formData, currency: value});
-                    // Automatically save currency change
                     updateProfile({ ...formData, currency: value })
                       .then(() => toast({ title: "Currency Updated", description: `Default currency set to ${value}`}))
                       .catch(() => toast({ title: "Error", description: "Failed to update currency", variant: "destructive" }));
