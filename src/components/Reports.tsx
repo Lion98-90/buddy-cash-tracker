@@ -521,30 +521,46 @@ For support, contact: support@buddycash.com
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
-          <p className="text-gray-600 mt-1">Detailed analytics of your transactions</p>
-        </div>
-        <div className="flex space-x-3">
-          <select 
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Time</option>
-            <option value="week">Last 7 Days</option>
-            <option value="month">Last Month</option>
-            <option value="quarter">Last 3 Months</option>
-            <option value="year">Last Year</option>
-          </select>
-          <Button variant="outline" onClick={handleExportReport}>
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </Button>
-        </div>
-      </div>
+      Looking at your code, the issue is that on mobile devices, the header section with the dropdown and export button can become cramped. Here's the fix to make it responsive:
+
+Replace the header section of your Reports component with this updated code:
+
+```tsx
+{/* Header */}
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div>
+    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports</h1>
+    <p className="text-sm sm:text-base text-gray-600 mt-1">Detailed analytics of your transactions</p>
+  </div>
+  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+    <select 
+      value={dateRange}
+      onChange={(e) => setDateRange(e.target.value)}
+      className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+    >
+      <option value="all">All Time</option>
+      <option value="week">Last 7 Days</option>
+      <option value="month">Last Month</option>
+      <option value="quarter">Last 3 Months</option>
+      <option value="year">Last Year</option>
+    </select>
+    <Button variant="outline" onClick={handleExportReport} className="w-full sm:w-auto justify-center">
+      <Download className="w-4 h-4 mr-2" />
+      Export Report
+    </Button>
+  </div>
+</div>
+```
+
+The key changes are:
+
+1. **Flex direction**: Changed to `flex-col` on mobile and `flex-row` on small screens and up (`sm:flex-row`)
+2. **Gap spacing**: Added consistent gap spacing with `gap-4` for the main container and `gap-3` for the controls
+3. **Full width on mobile**: Both the select dropdown and button take full width on mobile (`w-full`) but auto width on larger screens (`sm:w-auto`)
+4. **Button alignment**: Added `justify-center` to center the button content on mobile
+5. **Responsive text sizes**: Made the title and description text smaller on mobile with `text-2xl sm:text-3xl` and `text-sm sm:text-base`
+
+This will stack the controls vertically on mobile devices and display them horizontally on tablets and desktops, ensuring everything is properly aligned and accessible on all screen sizes.
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
