@@ -696,17 +696,8 @@ export const Settings = () => {
               <Button
   variant="outline"
   className="w-full"
-  onClick={() => {
-    if (deferredPrompt) {
-      handleInstallApp();
-    } else {
-      toast({
-        title: "Install from Browser",
-        description: "Tap the install icon in your browser's address bar.",
-        variant: "default"
-      });
-    }
-  }}
+  onClick={handleInstallApp}
+  disabled={!deferredPrompt}
 >
   <DownloadCloud className="w-4 h-4 mr-2" />
   Install App
