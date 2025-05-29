@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; // Changed import
-import { Camera, Edit, Shield, CreditCard, Globe, LogOut, Settings as SettingsIcon, Download, FileText, Trash2 } from 'lucide-react';
+import autoTable from 'jspdf-autotable';
+// Import DownloadCloud for the new button
+import { Camera, Edit, Shield, CreditCard, Globe, LogOut, Settings as SettingsIcon, Download, FileText, Trash2, DownloadCloud } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -15,6 +16,16 @@ import { useToast } from '../hooks/use-toast';
 // Interface for jsPDF instance when extended by autoTable (for lastAutoTable property)
 interface jsPDFWithAutoTableData extends jsPDF {
   lastAutoTable: { finalY?: number };
+}
+
+// Interface for the BeforeInstallPromptEvent
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
 }
 
 export const Settings = () => {
@@ -32,6 +43,8 @@ export const Settings = () => {
     currency: 'USD'
   });
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  // State to store the deferred install prompt event
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -78,6 +91,48 @@ export const Settings = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
+  // Effect to listen for the beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      console.log('[PWA] beforeinstallprompt event caught and stashed.');
+      // Optionally, update UI to notify the user they can add to home screen
+      toast({
+        title: "Install App",
+        description: "You can now install this app to your device!",
+        duration: 5000,
+      });
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    console.log('[PWA] Added beforeinstallprompt event listener.');
+
+    // Listener for when the app is successfully installed
+    const handleAppInstalled = () => {
+        console.log('[PWA] App installed successfully.');
+        toast({
+            title: "Installation Complete",
+            description: "The app has been successfully installed.",
+        });
+        // Hide the install button as it's no longer needed
+        setDeferredPrompt(null);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+    console.log('[PWA] Added appinstalled event listener.');
+
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      console.log('[PWA] Removed beforeinstallprompt event listener.');
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      console.log('[PWA] Removed appinstalled event listener.');
+    };
+  }, [toast]);
+
 
   const handleSave = async () => {
     try {
@@ -112,6 +167,7 @@ export const Settings = () => {
   };
 
   const handleDeleteAccount = async () => {
+    // Replace window.confirm with a custom modal in a real app
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       try {
         await signOut(); 
@@ -167,7 +223,7 @@ export const Settings = () => {
         orientation: 'p',
         unit: 'pt',
         format: 'a4'
-      }) as jsPDFWithAutoTableData; // Cast to interface that includes lastAutoTable
+      }) as jsPDFWithAutoTableData; 
       console.log('[handleDownloadReport] jsPDF instance created.');
 
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -327,7 +383,7 @@ export const Settings = () => {
         addPageIfNeeded(20 + topOwedToYou.length * 20);
         doc.setFont(FONT_BOLD); doc.setFontSize(11); doc.setTextColor(COLOR_TEXT_DARK);
         doc.text('People Who Owe You:', margin, yPos); yPos += 20;
-        autoTable(doc, { // Changed call
+        autoTable(doc, { 
           head: [['Name', 'Amount']], body: topOwedToYou, startY: yPos,
           theme: 'striped', headStyles: { fillColor: COLOR_PRIMARY, textColor: '#FFFFFF', fontStyle: 'bold' },
           styles: { font: FONT_REGULAR, fontSize: 9, cellPadding: 5 },
@@ -344,7 +400,7 @@ export const Settings = () => {
         addPageIfNeeded(20 + topYouOwe.length * 20);
         doc.setFont(FONT_BOLD); doc.setFontSize(11); doc.setTextColor(COLOR_TEXT_DARK);
         doc.text('People You Owe:', margin, yPos); yPos += 20;
-        autoTable(doc, { // Changed call
+        autoTable(doc, { 
           head: [['Name', 'Amount']], body: topYouOwe, startY: yPos,
           theme: 'striped', headStyles: { fillColor: [220, 38, 38], textColor: '#FFFFFF', fontStyle: 'bold' },
           styles: { font: FONT_REGULAR, fontSize: 9, cellPadding: 5 },
@@ -368,7 +424,7 @@ export const Settings = () => {
       if (recentTransactionsData.length > 0) {
         console.log('[PDF] Drawing "Recent Transactions" table.');
         addPageIfNeeded(20 + recentTransactionsData.length * 20);
-        autoTable(doc, { // Changed call
+        autoTable(doc, { 
           head: [['Date', 'Type', 'Amount', 'Contact', 'Description']], body: recentTransactionsData, startY: yPos,
           theme: 'grid', headStyles: { fillColor: COLOR_TEXT_DARK, textColor: '#FFFFFF', fontStyle: 'bold' },
           styles: { font: FONT_REGULAR, fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
@@ -410,6 +466,38 @@ export const Settings = () => {
     }
   };
 
+  // Handler for the "Install App" button
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) {
+      console.log('[PWA] No deferred prompt available to show.');
+      toast({
+        title: "Installation Not Available",
+        description: "The app cannot be installed at this moment, or it might already be installed.",
+        variant: "default"
+      });
+      return;
+    }
+    // Show the install prompt
+    deferredPrompt.prompt();
+    console.log('[PWA] Install prompt shown.');
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`[PWA] User response to install prompt: ${outcome}`);
+    // We've used the prompt, and can't use it again, discard it
+    if (outcome === 'accepted') {
+        console.log('[PWA] User accepted the A2HS prompt');
+        // The 'appinstalled' event will handle the toast for successful installation
+    } else {
+        console.log('[PWA] User dismissed the A2HS prompt');
+        toast({
+            title: "Installation Cancelled",
+            description: "App installation was cancelled.",
+            variant: "default"
+        });
+    }
+    setDeferredPrompt(null);
+  };
+
 
   return (
     <div className="space-y-6">
@@ -422,6 +510,7 @@ export const Settings = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          {/* Personal Information Section */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
@@ -521,6 +610,7 @@ export const Settings = () => {
             )}
           </div>
 
+          {/* Currency Settings Section */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Currency Settings</h3>
             <div className="space-y-4">
@@ -552,6 +642,7 @@ export const Settings = () => {
             </div>
           </div>
 
+          {/* Security Settings Section */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Security Settings</h3>
             <div className="space-y-4">
@@ -567,6 +658,7 @@ export const Settings = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Quick Actions Section */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-2">
@@ -596,9 +688,21 @@ export const Settings = () => {
             </div>
           </div>
 
+          {/* Account Actions Section */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
             <div className="space-y-3">
+              {/* Conditionally render the Install App button */}
+              {deferredPrompt && (
+                <Button 
+                  variant="outline" 
+                  className="w-full border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+                  onClick={handleInstallApp}
+                >
+                  <DownloadCloud className="w-4 h-4 mr-2" />
+                  Install App
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 className="w-full"
