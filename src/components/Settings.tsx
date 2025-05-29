@@ -693,16 +693,15 @@ export const Settings = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
             <div className="space-y-3">
               {/* Conditionally render the Install App button */}
-              {deferredPrompt && (
-                <Button 
-                  variant="outline" 
-                  className="w-full border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
-                  onClick={handleInstallApp}
-                >
-                  <DownloadCloud className="w-4 h-4 mr-2" />
-                  Install App
-                </Button>
-              )}
+              <Button
+  variant="outline"
+  className="w-full"
+  onClick={handleInstallApp}
+  disabled={!deferredPrompt}
+>
+  <DownloadCloud className="w-4 h-4 mr-2" />
+  Install App
+</Button>
               <Button 
                 variant="outline" 
                 className="w-full"
