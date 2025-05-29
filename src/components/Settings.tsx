@@ -40,7 +40,7 @@ export const Settings = () => {
     email: '',
     phone: '',
     address: '',
-    currency: 'USD'
+    currency: 'INR'
   });
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   // State to store the deferred install prompt event
@@ -53,7 +53,7 @@ export const Settings = () => {
         email: profile.email || '',
         phone: profile.phone || '',
         address: profile.address || '',
-        currency: profile.currency || 'USD'
+        currency: profile.currency || 'INR'
       });
     }
   }, [profile]);
@@ -191,7 +191,7 @@ export const Settings = () => {
     const symbols: { [key: string]: string } = {
       'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥', 'CAD': 'C$', 'AUD': 'A$'
     };
-    return symbols[currencyCode] || '$';
+    return symbols[currencyCode] || '₹';
   };
 
   const handleExportData = () => {
